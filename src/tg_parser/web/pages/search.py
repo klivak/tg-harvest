@@ -1,6 +1,5 @@
 """Search page."""
 
-
 import streamlit as st
 
 from tg_parser.config import Settings
