@@ -50,7 +50,7 @@ def search(
     results = engine.load_results(out_path)
 
     if not results:
-        console.print("[yellow]No parsed data found. Run 'tg-parser parse' first.[/yellow]")
+        console.print("[yellow]No parsed data found. Run 'tg-harvest parse' first.[/yellow]")
         return
 
     channel_id = None

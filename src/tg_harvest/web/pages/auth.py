@@ -49,13 +49,13 @@ def render():
                 col2.metric("Phone", info["phone"])
             else:
                 st.warning("Session exists but not authorized.")
-                st.code("tg-parser auth login", language="bash")
+                st.code("tg-harvest auth login", language="bash")
         except Exception as e:
             st.warning(f"Could not verify session: {e}")
     else:
         st.warning("Not authenticated")
         st.markdown("Run the following command in terminal to authenticate:")
-        st.code("tg-parser auth login", language="bash")
+        st.code("tg-harvest auth login", language="bash")
 
     with st.expander("Configuration"):
         st.json(

@@ -78,6 +78,7 @@ class ChannelParser:
                     is_group=is_group or isinstance(entity, types.Chat),
                     is_private=not getattr(entity, "username", None),
                     members_count=getattr(entity, "participants_count", None),
+                    description=getattr(entity, "about", None),
                     restricted=getattr(entity, "restricted", False),
                     scam=getattr(entity, "scam", False),
                     verified=getattr(entity, "verified", False),

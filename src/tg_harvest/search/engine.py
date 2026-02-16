@@ -9,6 +9,7 @@ from pathlib import Path
 from tg_harvest.models.media import MediaType
 from tg_harvest.models.message import ParsedMessage
 from tg_harvest.models.parse_result import ParseResult
+from tg_harvest.utils.date_utils import parse_date
 
 logger = logging.getLogger(__name__)
 
@@ -95,15 +96,11 @@ class SearchEngine:
                 return False
 
         if filters.date_from:
-            from tg_harvest.utils.date_utils import parse_date
-
             dt = parse_date(filters.date_from)
             if msg.date < dt:
                 return False
 
         if filters.date_to:
-            from tg_harvest.utils.date_utils import parse_date
-
             dt = parse_date(filters.date_to)
             if msg.date > dt:
                 return False

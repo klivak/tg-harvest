@@ -49,7 +49,7 @@ def status():
                 if me.phone:
                     console.print(f"[dim]Phone:[/dim] +{me.phone}")
             else:
-                console.print("[yellow]Not authenticated. Run:[/yellow] tg-parser auth login")
+                console.print("[yellow]Not authenticated. Run:[/yellow] tg-harvest auth login")
         finally:
             await session.disconnect()
 

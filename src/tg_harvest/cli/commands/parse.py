@@ -135,8 +135,6 @@ async def _parse_async(
     # Incremental parsing: load last known message ID
     state = StateManager(settings.state_path)
     min_id = 0
-    if incremental:
-        pass
 
     async with TelegramSession(settings) as session:
         rate_limiter = RateLimiter(delay=settings.request_delay)
