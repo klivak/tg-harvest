@@ -18,8 +18,11 @@ class StateManager:
     def load(self) -> None:
         if self._path.exists():
             try:
-                self._state = json.loads(self._path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
+                data = json.loads(self._path.read_text(encoding="utf-8"))
+                if not isinstance(data, dict):
+                    raise ValueError("State file is not a JSON object")
+                self._state = data
+            except (json.JSONDecodeError, OSError, ValueError):
                 logger.warning("Failed to load parse state from %s, starting fresh", self._path)
                 self._state = {}
 
