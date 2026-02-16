@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from tg_harvest.config import Settings
+from tg_harvest.models.media import MediaType
 from tg_harvest.search.engine import SearchEngine, SearchFilters
 
 console = Console()
@@ -57,8 +58,6 @@ def search(
     if channel:
         if channel.lstrip("-").isdigit():
             channel_id = int(channel)
-
-    from tg_harvest.models.media import MediaType
 
     media = None
     if media_type:

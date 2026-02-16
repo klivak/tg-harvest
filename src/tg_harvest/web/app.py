@@ -37,12 +37,17 @@ if __name__ == "__main__" or st.runtime.exists():
         initial_sidebar_state="expanded",
     )
 
+    from tg_harvest import __version__
+
     st.sidebar.title("TG Harvest")
     page = st.sidebar.radio(
         "Navigation",
         ["Auth Status", "Channels", "Parse", "Search", "Analytics"],
         label_visibility="collapsed",
     )
+    st.sidebar.divider()
+    st.sidebar.caption("Auth \u2192 Channels \u2192 Parse \u2192 Search \u2192 Analytics")
+    st.sidebar.caption(f"v{__version__}")
 
     if page == "Auth Status":
         from tg_harvest.web.pages.auth import render

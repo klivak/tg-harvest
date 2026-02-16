@@ -3,12 +3,15 @@
 import asyncio
 
 import click
+from rich.console import Console
 
 from tg_harvest.cli.formatters import print_channel_table
 from tg_harvest.client.rate_limiter import RateLimiter
 from tg_harvest.client.session import TelegramSession
 from tg_harvest.config import Settings
 from tg_harvest.parsers.channel_parser import ChannelParser
+
+console = Console()
 
 
 @click.group()
@@ -28,11 +31,13 @@ def list_channels(limit: int):
         async with TelegramSession(settings) as session:
             rate_limiter = RateLimiter(delay=settings.request_delay)
             parser = ChannelParser(session.client, rate_limiter)
-            result = await parser.list_channels(limit=limit)
+
+            with console.status("Fetching channels..."):
+                result = await parser.list_channels(limit=limit)
 
             if result:
                 print_channel_table(result)
             else:
-                click.echo("No channels or groups found.")
+                console.print("[yellow]No channels or groups found.[/yellow]")
 
     asyncio.run(_list())

@@ -1,7 +1,10 @@
 """Parse page — main parsing interface."""
 
 import asyncio
+import csv
+import io
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -9,10 +12,12 @@ import streamlit as st
 
 from tg_harvest.config import Settings
 from tg_harvest.config.constants import ALL_EXPORT_FIELDS
+from tg_harvest.exporters.base import build_row, filter_fields
 
 
 def render():
     st.header("Parse Channel")
+    st.caption("Step 3 — extract messages from a Telegram channel or group")
 
     try:
         settings = Settings()
@@ -29,6 +34,9 @@ def render():
         )
     with col2:
         incremental = st.checkbox("Incremental", help="Only fetch new messages since last parse")
+
+    if incremental:
+        st.caption("Will fetch only messages newer than the last parse.")
 
     # Date range
     col1, col2 = st.columns(2)
@@ -65,6 +73,9 @@ def render():
             st.warning("Select at least one field.")
 
     # Parse button
+    if not channel:
+        st.info("Enter a channel username (@channel) or numeric ID to start parsing.")
+
     if st.button("Parse", type="primary", disabled=not channel or not selected_fields):
         fields = selected_fields if not select_all else None
         _do_parse(
@@ -207,6 +218,17 @@ async def _parse_async(
         return result, output_files
 
 
+def _format_size(path: str) -> str:
+    """Format file size for display."""
+    try:
+        size = os.path.getsize(path)
+        if size < 1024:
+            return f"{size} B"
+        return f"{size / 1024:.1f} KB"
+    except OSError:
+        return ""
+
+
 def _show_result(result_data: dict, output_files: list[str]):
     st.divider()
     st.subheader(f"Results: {result_data['channel']['title']}")
@@ -242,14 +264,16 @@ def _show_result(result_data: dict, output_files: list[str]):
 
         st.dataframe(rows, use_container_width=True, hide_index=True)
 
-    # Download buttons
+    # Exported files with sizes
     if output_files:
         st.markdown("**Exported files:**")
         for f in output_files:
-            st.code(f)
+            size = _format_size(f)
+            st.code(f"{f}  ({size})" if size else f)
 
-    # Download raw JSON
-    col1, col2 = st.columns(2)
+    # Download buttons
+    col1, col2, col3 = st.columns(3)
+
     with col1:
         st.download_button(
             "Download JSON",
@@ -259,3 +283,75 @@ def _show_result(result_data: dict, output_files: list[str]):
             ),
             mime="application/json",
         )
+
+    with col2:
+        csv_data = _build_csv(result_data)
+        st.download_button(
+            "Download CSV",
+            data=csv_data,
+            file_name=(
+                f"{result_data['channel'].get('username', result_data['channel']['id'])}.csv"
+            ),
+            mime="text/csv",
+        )
+
+    with col3:
+        xlsx_data = _build_xlsx(result_data)
+        if xlsx_data:
+            st.download_button(
+                "Download XLSX",
+                data=xlsx_data,
+                file_name=(
+                    f"{result_data['channel'].get('username', result_data['channel']['id'])}.xlsx"
+                ),
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+
+
+def _build_csv(result_data: dict) -> str:
+    """Build CSV string from result data for download."""
+    from tg_harvest.models.message import ParsedMessage
+
+    output = io.StringIO()
+    fields = list(ALL_EXPORT_FIELDS)
+    writer = csv.DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+
+    for msg_data in result_data.get("messages", []):
+        try:
+            msg = ParsedMessage.model_validate(msg_data)
+            row = filter_fields(build_row(msg), fields)
+            writer.writerow(row)
+        except Exception:
+            continue
+
+    return output.getvalue()
+
+
+def _build_xlsx(result_data: dict) -> bytes | None:
+    """Build XLSX bytes from result data for download."""
+    try:
+        from openpyxl import Workbook
+
+        from tg_harvest.models.message import ParsedMessage
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Messages"
+
+        fields = list(ALL_EXPORT_FIELDS)
+        ws.append(fields)
+
+        for msg_data in result_data.get("messages", []):
+            try:
+                msg = ParsedMessage.model_validate(msg_data)
+                row = filter_fields(build_row(msg), fields)
+                ws.append([row.get(f, "") for f in fields])
+            except Exception:
+                continue
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+    except ImportError:
+        return None

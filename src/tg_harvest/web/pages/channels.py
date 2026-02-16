@@ -9,6 +9,7 @@ from tg_harvest.config import Settings
 
 def render():
     st.header("Channels & Groups")
+    st.caption("Step 2 — browse your accessible channels")
 
     try:
         settings = Settings()
@@ -24,35 +25,50 @@ def render():
                 channels = asyncio.run(_fetch_channels(settings, limit))
                 st.session_state["channels"] = channels
             except Exception as e:
-                st.error(f"Failed to fetch channels: {e}")
+                err = str(e).lower()
+                if "auth" in err or "not authorized" in err or "session" in err:
+                    st.error("Not authorized. Go to **Auth Status** and log in first.")
+                else:
+                    st.error(f"Failed to fetch channels: {e}")
                 return
 
-    if "channels" in st.session_state and st.session_state["channels"]:
-        channels = st.session_state["channels"]
+    if "channels" not in st.session_state:
+        st.info("Click **Load channels** to see your accessible channels and groups.")
+        return
 
-        search = st.text_input("Filter channels", placeholder="Type to filter...")
-        if search:
-            channels = [
-                c
-                for c in channels
-                if search.lower() in c["title"].lower()
-                or (c["username"] and search.lower() in c["username"].lower())
-            ]
+    channels = st.session_state["channels"]
+    if not channels:
+        st.warning("No channels or groups found.")
+        return
 
-        st.dataframe(
-            channels,
-            column_config={
-                "id": st.column_config.NumberColumn("ID", format="%d"),
-                "title": "Title",
-                "username": "Username",
-                "type": "Type",
-                "members": st.column_config.NumberColumn("Members", format="%d"),
-                "restricted": "Restricted",
-            },
-            use_container_width=True,
-            hide_index=True,
-        )
-        st.caption(f"Total: {len(channels)} channels/groups")
+    total = len(channels)
+    search = st.text_input("Filter channels", placeholder="Type to filter...")
+    if search:
+        channels = [
+            c
+            for c in channels
+            if search.lower() in c["title"].lower()
+            or (c["username"] and search.lower() in c["username"].lower())
+        ]
+
+    st.dataframe(
+        channels,
+        column_config={
+            "id": st.column_config.NumberColumn("ID", format="%d"),
+            "title": "Title",
+            "username": "Username",
+            "type": "Type",
+            "members": st.column_config.NumberColumn("Members", format="%d"),
+            "restricted": "Restricted",
+        },
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    if search:
+        st.caption(f"Showing {len(channels)} of {total} channels/groups")
+    else:
+        st.caption(f"Total: {total} channels/groups")
 
 
 async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:

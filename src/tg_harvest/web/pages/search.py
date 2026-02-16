@@ -1,5 +1,8 @@
 """Search page."""
 
+import csv
+import io
+
 import streamlit as st
 
 from tg_harvest.config import Settings
@@ -9,6 +12,7 @@ from tg_harvest.search.engine import SearchEngine, SearchFilters
 
 def render():
     st.header("Search Messages")
+    st.caption("Step 4 — find messages across all parsed data")
 
     try:
         settings = Settings()
@@ -53,42 +57,78 @@ def render():
         channel_options = ["All channels"] + list(unique.keys())
         selected_channel = st.selectbox("Channel", channel_options)
 
-    if st.button("Search", type="primary") or query:
-        filters = SearchFilters(
-            keyword=query,
-            media_type=MediaType(media_type) if media_type != "Any" else None,
-            has_reactions=True if has_reactions else None,
-            min_views=min_views if min_views > 0 else None,
-            date_from=from_date.isoformat() if from_date else None,
-            date_to=to_date.isoformat() if to_date else None,
-            channel_id=unique.get(selected_channel) if selected_channel != "All channels" else None,
+    if not query and not st.button("Search", type="primary"):
+        st.info("Enter a search query to find messages across all parsed data.")
+        return
+
+    filters = SearchFilters(
+        keyword=query,
+        media_type=MediaType(media_type) if media_type != "Any" else None,
+        has_reactions=True if has_reactions else None,
+        min_views=min_views if min_views > 0 else None,
+        date_from=from_date.isoformat() if from_date else None,
+        date_to=to_date.isoformat() if to_date else None,
+        channel_id=unique.get(selected_channel) if selected_channel != "All channels" else None,
+    )
+
+    matches = engine.search(results, filters)
+
+    if not matches:
+        st.warning("No messages found matching your criteria.")
+        return
+
+    st.subheader(f"Results ({len(matches)})")
+
+    rows = []
+    for match in matches[:200]:
+        msg = match.message
+        text = msg.text[:120].replace("\n", " ") if msg.text else ""
+        rows.append(
+            {
+                "Channel": match.channel_username or match.channel_title,
+                "Date": msg.date.strftime("%Y-%m-%d %H:%M"),
+                "ID": msg.id,
+                "Text": text,
+                "Views": msg.views or 0,
+                "Reactions": msg.reactions.total if msg.reactions else 0,
+                "Media": msg.media.type if msg.media else "",
+            }
         )
 
-        matches = engine.search(results, filters)
+    st.dataframe(rows, use_container_width=True, hide_index=True)
 
-        if not matches:
-            st.info("No messages found matching your criteria.")
-            return
+    if len(matches) > 200:
+        st.caption(f"Showing 200 of {len(matches)} results")
 
-        st.success(f"Found {len(matches)} messages")
+    # Export search results as CSV
+    csv_data = _build_search_csv(matches[:200])
+    st.download_button(
+        "Download results as CSV",
+        data=csv_data,
+        file_name="search_results.csv",
+        mime="text/csv",
+    )
 
-        rows = []
-        for match in matches[:200]:
-            msg = match.message
-            text = msg.text[:120].replace("\n", " ") if msg.text else ""
-            rows.append(
-                {
-                    "Channel": match.channel_username or match.channel_title,
-                    "Date": msg.date.strftime("%Y-%m-%d %H:%M"),
-                    "ID": msg.id,
-                    "Text": text,
-                    "Views": msg.views or 0,
-                    "Reactions": msg.reactions.total if msg.reactions else 0,
-                    "Media": msg.media.type if msg.media else "",
-                }
-            )
 
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+def _build_search_csv(matches: list) -> str:
+    """Build CSV from search results for download."""
+    output = io.StringIO()
+    fields = ["Channel", "Date", "ID", "Text", "Views", "Reactions", "Media"]
+    writer = csv.DictWriter(output, fieldnames=fields)
+    writer.writeheader()
 
-        if len(matches) > 200:
-            st.caption(f"Showing 200 of {len(matches)} results")
+    for match in matches:
+        msg = match.message
+        writer.writerow(
+            {
+                "Channel": match.channel_username or match.channel_title,
+                "Date": msg.date.strftime("%Y-%m-%d %H:%M"),
+                "ID": msg.id,
+                "Text": msg.text[:500].replace("\n", " ") if msg.text else "",
+                "Views": msg.views or 0,
+                "Reactions": msg.reactions.total if msg.reactions else 0,
+                "Media": msg.media.type if msg.media else "",
+            }
+        )
+
+    return output.getvalue()

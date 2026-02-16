@@ -10,6 +10,7 @@ from tg_harvest.search.engine import SearchEngine
 
 def render():
     st.header("Analytics")
+    st.caption("Step 5 — visualize channel activity and engagement")
 
     try:
         settings = Settings()
@@ -77,6 +78,7 @@ def render():
     )
     fig.update_layout(height=300, margin=dict(t=10, b=40))
     st.plotly_chart(fig, use_container_width=True)
+    st.caption("Times are in UTC")
 
     # Two columns for tops
     col1, col2 = st.columns(2)
@@ -97,7 +99,7 @@ def render():
                 )
             st.dataframe(rows, use_container_width=True, hide_index=True)
         else:
-            st.info("No view data available")
+            st.info("No view data. Parse a channel that tracks views.")
 
     with col2:
         st.subheader("Top by Reactions")
@@ -115,7 +117,7 @@ def render():
                 )
             st.dataframe(rows, use_container_width=True, hide_index=True)
         else:
-            st.info("No reaction data available")
+            st.info("No reaction data. Parse a channel with reactions enabled.")
 
     # Media distribution
     col1, col2 = st.columns(2)
@@ -145,4 +147,4 @@ def render():
             fig.update_layout(height=350, margin=dict(t=10, b=40))
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("No reaction data available")
+            st.info("No reaction data. Parse a channel with reactions enabled.")
