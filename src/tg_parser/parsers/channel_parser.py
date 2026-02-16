@@ -51,6 +51,41 @@ class ChannelParser:
             verified=getattr(entity, "verified", False),
         )
 
+    async def list_channels(self, limit: int = 100) -> list[ChannelInfo]:
+        """List all accessible channels and groups.
+
+        Args:
+            limit: Maximum number of dialogs to scan.
+
+        Returns:
+            List of ChannelInfo for channels and groups.
+        """
+        result: list[ChannelInfo] = []
+        async for dialog in self._client.iter_dialogs(limit=limit):
+            entity = dialog.entity
+            if not isinstance(entity, (types.Channel, types.Chat)):
+                continue
+
+            is_channel = isinstance(entity, types.Channel)
+            is_group = is_channel and entity.megagroup
+
+            result.append(
+                ChannelInfo(
+                    id=entity.id,
+                    title=entity.title,
+                    username=getattr(entity, "username", None),
+                    is_channel=is_channel and not is_group,
+                    is_group=is_group or isinstance(entity, types.Chat),
+                    is_private=not getattr(entity, "username", None),
+                    members_count=getattr(entity, "participants_count", None),
+                    restricted=getattr(entity, "restricted", False),
+                    scam=getattr(entity, "scam", False),
+                    verified=getattr(entity, "verified", False),
+                )
+            )
+
+        return result
+
     async def parse(
         self,
         channel: str | int,

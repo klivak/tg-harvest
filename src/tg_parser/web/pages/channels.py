@@ -56,29 +56,23 @@ def render():
 
 
 async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
-    from telethon.tl import types
-
+    from tg_parser.client.rate_limiter import RateLimiter
     from tg_parser.client.session import TelegramSession
+    from tg_parser.parsers.channel_parser import ChannelParser
 
-    result = []
     async with TelegramSession(settings) as session:
-        async for dialog in session.client.iter_dialogs(limit=limit):
-            entity = dialog.entity
-            if not isinstance(entity, (types.Channel, types.Chat)):
-                continue
+        rate_limiter = RateLimiter(delay=settings.request_delay)
+        parser = ChannelParser(session.client, rate_limiter)
+        channel_list = await parser.list_channels(limit=limit)
 
-            is_channel = isinstance(entity, types.Channel)
-            is_group = is_channel and entity.megagroup
-
-            result.append(
-                {
-                    "id": entity.id,
-                    "title": entity.title,
-                    "username": getattr(entity, "username", None) or "",
-                    "type": "Group" if is_group or isinstance(entity, types.Chat) else "Channel",
-                    "members": getattr(entity, "participants_count", None) or 0,
-                    "restricted": "Yes" if getattr(entity, "restricted", False) else "",
-                }
-            )
-
-    return result
+    return [
+        {
+            "id": ch.id,
+            "title": ch.title,
+            "username": ch.username or "",
+            "type": "Group" if ch.is_group else "Channel",
+            "members": ch.members_count or 0,
+            "restricted": "Yes" if ch.restricted else "",
+        }
+        for ch in channel_list
+    ]
