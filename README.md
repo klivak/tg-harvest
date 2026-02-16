@@ -4,6 +4,10 @@
 
 Telegram channel/chat data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel you have access to — including restricted channels where copying is disabled.
 
+**Use cases:** Telegram channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management.
+
+**Keywords:** telegram parser, telegram scraper, telegram channel export, telegram messages download, telegram analytics, telegram data extraction, telethon, telegram api, telegram backup, telegram archive, telegram channel statistics, telegram reactions, telegram views counter, restricted channel parser, private channel export, telegram to excel, telegram to csv, telegram to json, telegram content analysis, telegram monitoring tool
+
 ## Features
 
 - **Full API access** — works at MTProto level, bypasses UI restrictions (copy-disabled channels)

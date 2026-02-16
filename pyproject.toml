@@ -7,6 +7,12 @@ name = "tg-harvest"
 version = "0.4.0"
 description = "Telegram channel/chat data harvester via MTProto API"
 license = {text = "MIT"}
+keywords = [
+    "telegram", "parser", "scraper", "telethon", "telegram-api",
+    "telegram-channel", "telegram-export", "telegram-analytics",
+    "telegram-backup", "telegram-archive", "osint", "data-extraction",
+    "social-media", "content-analysis", "telegram-monitoring",
+]
 requires-python = ">=3.11"
 dependencies = [
     "telethon>=1.42",
