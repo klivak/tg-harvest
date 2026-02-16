@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-16
+
+### Added
+
+- **Streamlit Web UI** (`tg-parser web`) on port 8777:
+  - Auth status page with config viewer
+  - Channels browser with search filter
+  - Parse page with date pickers, progress bar, results table, download buttons
+  - Search page with full-text search and filters
+  - Analytics page with interactive Plotly charts
+- **Message search** (`tg-parser search`) across parsed JSON files:
+  - Text keyword search
+  - Filters: media type, min views, has reactions, date range, channel
+- **Incremental parsing** (`tg-parser parse -i`):
+  - Tracks last parsed message ID per channel
+  - Only fetches new messages since last parse
+- **Analytics** module:
+  - Messages per day / activity by hour
+  - Top posts by views and reactions
+  - Media type distribution
+  - Reactions breakdown
+  - Summary statistics (avg views, avg reactions, forwarded, edited counts)
+- **CI/CD**: GitHub Actions workflow (lint + test on push/PR)
+- **Code quality**: pre-commit config with ruff check/format, trailing whitespace, EOF fixer
+- **Ruff format** configuration in pyproject.toml
+
+### Changed
+
+- ChannelParser.parse() now accepts `min_id` parameter for incremental parsing
+- Updated dependencies: added streamlit, plotly, pre-commit
+
 ## [0.1.0] - 2026-02-16
 
 ### Added

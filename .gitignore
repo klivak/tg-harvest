@@ -28,6 +28,9 @@ sessions/*.session-journal
 # Output data
 output/
 
+# Parse state
+sessions/parse_state.json
+
 # OS
 Thumbs.db
 .DS_Store

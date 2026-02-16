@@ -57,6 +57,7 @@ class ChannelParser:
         from_date: datetime | None = None,
         to_date: datetime | None = None,
         limit: int = 0,
+        min_id: int = 0,
         on_progress: Callable[[int], None] | None = None,
     ) -> ParseResult:
         """Parse messages from a channel within the specified date range.
@@ -66,6 +67,7 @@ class ChannelParser:
             from_date: Start date (inclusive), UTC.
             to_date: End date (inclusive), UTC.
             limit: Maximum number of messages (0 = no limit).
+            min_id: Only fetch messages with ID greater than this (for incremental parsing).
             on_progress: Callback called with current message count.
 
         Returns:
@@ -90,6 +92,9 @@ class ChannelParser:
 
         if limit > 0:
             iter_kwargs["limit"] = limit
+
+        if min_id > 0:
+            iter_kwargs["min_id"] = min_id
 
         async for msg in self._client.iter_messages(**iter_kwargs):
             await self._rate_limiter.wait()

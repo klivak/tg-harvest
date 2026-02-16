@@ -1,7 +1,6 @@
 """Tests for CSV exporter."""
 
 import csv
-from pathlib import Path
 
 import pytest
 

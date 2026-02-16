@@ -15,6 +15,7 @@ from tg_parser.config.constants import DEFAULT_EXPORT_FORMAT, SUPPORTED_FORMATS
 from tg_parser.exporters.csv_exporter import CsvExporter
 from tg_parser.exporters.json_exporter import JsonExporter
 from tg_parser.parsers.channel_parser import ChannelParser
+from tg_parser.storage.state import StateManager
 from tg_parser.utils.date_utils import parse_date
 
 console = Console()
@@ -57,6 +58,13 @@ console = Console()
     default=None,
     help="Output directory (default: from settings or ./output).",
 )
+@click.option(
+    "-i",
+    "--incremental",
+    is_flag=True,
+    default=False,
+    help="Only fetch new messages since last parse.",
+)
 def parse(
     channel: str,
     from_date: str | None,
@@ -64,12 +72,15 @@ def parse(
     limit: int,
     export_format: str,
     output_dir: str | None,
+    incremental: bool,
 ):
     """Parse messages from a Telegram channel or group.
 
     CHANNEL can be a username (@channel), invite link, or numeric ID.
     """
-    asyncio.run(_parse_async(channel, from_date, to_date, limit, export_format, output_dir))
+    asyncio.run(
+        _parse_async(channel, from_date, to_date, limit, export_format, output_dir, incremental)
+    )
 
 
 async def _parse_async(
@@ -79,6 +90,7 @@ async def _parse_async(
     limit: int,
     export_format: str,
     output_dir: str | None,
+    incremental: bool,
 ):
     settings = Settings()
     out_path = Path(output_dir) if output_dir else settings.output_dir
@@ -91,9 +103,25 @@ async def _parse_async(
     if channel.lstrip("-").isdigit():
         channel_id = int(channel)
 
+    # Incremental parsing: load last known message ID
+    state = StateManager(settings.state_path)
+    min_id = 0
+    if incremental:
+        # We need to resolve the numeric ID for state lookup
+        # Will be done after connecting
+        pass
+
     async with TelegramSession(settings) as session:
         rate_limiter = RateLimiter(delay=settings.request_delay)
         parser = ChannelParser(session.client, rate_limiter)
+
+        # For incremental mode, resolve channel first to get numeric ID
+        if incremental:
+            info = await parser.get_channel_info(channel_id)
+            last_id = state.get_last_id(info.id)
+            if last_id:
+                min_id = last_id
+                console.print(f"[dim]Incremental mode: fetching messages after ID {last_id}[/dim]")
 
         # Parse with progress bar
         with Progress(
@@ -113,8 +141,14 @@ async def _parse_async(
                 from_date=from_date,
                 to_date=to_date,
                 limit=limit,
+                min_id=min_id,
                 on_progress=on_progress,
             )
+
+        # Update incremental state
+        if result.messages:
+            max_msg_id = max(m.id for m in result.messages)
+            state.set_last_id(result.channel.id, max_msg_id)
 
         if not result.messages:
             console.print("[yellow]No messages found for the given criteria.[/yellow]")

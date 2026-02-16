@@ -1,16 +1,22 @@
 # Telegram API Parser
 
+[![CI](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml)
+
 Parser for Telegram channels and chats via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel you have access to — including restricted channels where copying is disabled.
 
 ## Features
 
 - **Full API access** — works at MTProto level, bypasses UI restrictions (copy-disabled channels)
 - **Rich data extraction** — messages, media, reactions, views, forwards, replies, entities
+- **Web UI** — Streamlit-based interface with parsing, search, and analytics
+- **Message search** — full-text search across parsed data with filters
+- **Incremental parsing** — only fetch new messages since last parse
+- **Analytics** — message activity charts, top posts, reaction breakdown
 - **Flexible filtering** — by date range, message limit
 - **Multiple export formats** — JSON, CSV, or both
 - **Beautiful CLI** — progress bars, colored output, summary tables
 - **Rate limiting** — respects Telegram API limits, auto-handles FloodWait errors
-- **Async architecture** — efficient parsing of large channels
+- **CI/CD** — GitHub Actions, ruff linting, pre-commit hooks
 
 ## Requirements
 
@@ -20,7 +26,7 @@ Parser for Telegram channels and chats via MTProto API. Extracts messages, media
 ## Installation
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/klivak/telegram-api-parser.git
 cd telegram-api-parser
 
 # Create virtual environment
@@ -30,6 +36,9 @@ source .venv/bin/activate  # Linux/Mac
 
 # Install
 pip install -e .
+
+# Install dev dependencies (for testing/linting)
+pip install -e ".[dev]"
 ```
 
 ## Configuration
@@ -102,9 +111,51 @@ tg-parser parse @channel -o ./my_data
 # Parse by numeric ID (for private channels)
 tg-parser parse -1001234567890
 
+# Incremental mode (only new messages since last parse)
+tg-parser parse @channel -i
+
 # Verbose mode (debug logging)
 tg-parser -v parse @channel
 ```
+
+### Search Messages
+
+```bash
+# Search across all parsed data
+tg-parser search "keyword"
+
+# Filter by media type
+tg-parser search "photo" --media-type photo
+
+# Filter by minimum views
+tg-parser search "news" --min-views 1000
+
+# Only messages with reactions
+tg-parser search "announcement" --has-reactions
+
+# Date range filter
+tg-parser search "update" --from-date 2024-01-01 --to-date 2024-06-30
+
+# Limit results
+tg-parser search "crypto" -n 100
+```
+
+### Web UI
+
+```bash
+# Start Streamlit web interface (port 8777)
+tg-parser web
+
+# Custom port
+tg-parser web -p 9000
+```
+
+The web UI provides:
+- **Auth Status** — check authentication, view config
+- **Channels** — browse accessible channels with filtering
+- **Parse** — parse channels with date pickers, progress bar, results table, download buttons
+- **Search** — full-text search with filters (media type, views, reactions, date range)
+- **Analytics** — interactive charts: messages per day, hourly activity, top posts by views/reactions, media distribution, reaction breakdown
 
 ## Output Format
 
@@ -154,7 +205,11 @@ src/tg_parser/
   client/       Telegram session, rate limiter
   parsers/      Message/media/channel parsing
   exporters/    JSON, CSV export
+  storage/      Incremental parsing state
+  search/       Search engine
+  analytics/    Statistics and analytics
   cli/          Click CLI commands
+  web/          Streamlit web UI
   utils/        Logging, date helpers
 ```
 
@@ -166,13 +221,25 @@ src/tg_parser/
 | `TG_FLOOD_SLEEP_THRESHOLD` | `60` | Auto-sleep for FloodWait errors (seconds) |
 | `TG_REQUEST_DELAY` | `1.0` | Delay between API requests (seconds) |
 | `TG_OUTPUT_DIR` | `./output` | Default output directory |
+| `TG_WEB_PORT` | `8777` | Streamlit web UI port |
 
 ## Development
 
 ```bash
+# Install dev dependencies
 pip install -e ".[dev]"
-pytest
-ruff check src/
+
+# Run tests
+pytest -v
+
+# Lint
+ruff check src/ tests/
+
+# Format
+ruff format src/ tests/
+
+# Setup pre-commit hooks
+pre-commit install
 ```
 
 ## License

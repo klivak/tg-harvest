@@ -6,6 +6,8 @@ from tg_parser import __version__
 from tg_parser.cli.commands.auth import auth
 from tg_parser.cli.commands.channels import channels
 from tg_parser.cli.commands.parse import parse
+from tg_parser.cli.commands.search import search
+from tg_parser.cli.commands.web import web
 from tg_parser.utils.logging import setup_logging
 
 
@@ -20,3 +22,5 @@ def cli(verbose: bool):
 cli.add_command(auth)
 cli.add_command(channels)
 cli.add_command(parse)
+cli.add_command(search)
+cli.add_command(web)

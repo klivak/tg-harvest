@@ -2,7 +2,6 @@
 
 from datetime import datetime, timezone
 
-from tg_parser.models.channel import ChannelInfo
 from tg_parser.models.message import ParsedMessage
 from tg_parser.models.parse_result import ParseResult
 
