@@ -8,6 +8,7 @@ from pathlib import Path
 import streamlit as st
 
 from tg_parser.config import Settings
+from tg_parser.config.constants import ALL_EXPORT_FIELDS
 
 
 def render():
@@ -41,24 +42,54 @@ def render():
     with col1:
         limit = st.number_input("Message limit (0 = no limit)", min_value=0, value=0, step=100)
     with col2:
-        export_format = st.selectbox("Export format", ["json", "csv", "both"])
+        export_format = st.selectbox("Export format", ["json", "csv", "xlsx", "all"])
     with col3:
         output_dir = st.text_input("Output directory", value=str(settings.output_dir))
 
+    # Field selection
+    with st.expander("Field selection (select which fields to export)"):
+        select_all = st.checkbox("Select all fields", value=True)
+        if select_all:
+            selected_fields = list(ALL_EXPORT_FIELDS)
+        else:
+            cols = st.columns(4)
+            selected_fields = []
+            for i, field in enumerate(ALL_EXPORT_FIELDS):
+                with cols[i % 4]:
+                    if st.checkbox(
+                        field, value=field in ("id", "date", "text"), key=f"field_{field}"
+                    ):
+                        selected_fields.append(field)
+
+        if not selected_fields:
+            st.warning("Select at least one field.")
+
     # Parse button
-    if st.button("Parse", type="primary", disabled=not channel):
+    if st.button("Parse", type="primary", disabled=not channel or not selected_fields):
+        fields = selected_fields if not select_all else None
         _do_parse(
-            settings, channel, from_date, to_date, limit, export_format, output_dir, incremental
+            settings,
+            channel,
+            from_date,
+            to_date,
+            limit,
+            export_format,
+            output_dir,
+            incremental,
+            fields,
         )
 
     # Show last result
     if "last_parse_result" in st.session_state:
         _show_result(
-            st.session_state["last_parse_result"], st.session_state.get("last_output_files", [])
+            st.session_state["last_parse_result"],
+            st.session_state.get("last_output_files", []),
         )
 
 
-def _do_parse(settings, channel, from_date, to_date, limit, export_format, output_dir, incremental):
+def _do_parse(
+    settings, channel, from_date, to_date, limit, export_format, output_dir, incremental, fields
+):
     progress_bar = st.progress(0, text="Connecting...")
     status = st.empty()
 
@@ -73,6 +104,7 @@ def _do_parse(settings, channel, from_date, to_date, limit, export_format, outpu
                 export_format,
                 output_dir,
                 incremental,
+                fields,
                 progress_bar,
                 status,
             )
@@ -95,6 +127,7 @@ async def _parse_async(
     export_format,
     output_dir,
     incremental,
+    fields,
     progress_bar,
     status,
 ):
@@ -102,6 +135,7 @@ async def _parse_async(
     from tg_parser.client.session import TelegramSession
     from tg_parser.exporters.csv_exporter import CsvExporter
     from tg_parser.exporters.json_exporter import JsonExporter
+    from tg_parser.exporters.xlsx_exporter import XlsxExporter
     from tg_parser.parsers.channel_parser import ChannelParser
     from tg_parser.storage.state import StateManager
 
@@ -141,7 +175,6 @@ async def _parse_async(
 
         def on_progress(count):
             msg_count[0] = count
-            # Update every 10 messages to avoid too many rerenders
             if count % 10 == 0:
                 progress_bar.progress(min(count % 100, 99), text=f"Parsed {count} messages...")
 
@@ -161,11 +194,14 @@ async def _parse_async(
 
         # Export
         output_files = []
-        if export_format in ("json", "both"):
-            path = await JsonExporter().export(result, out_path)
+        if export_format in ("json", "all"):
+            path = await JsonExporter(fields).export(result, out_path)
             output_files.append(str(path))
-        if export_format in ("csv", "both"):
-            path = await CsvExporter().export(result, out_path)
+        if export_format in ("csv", "all"):
+            path = await CsvExporter(fields).export(result, out_path)
+            output_files.append(str(path))
+        if export_format in ("xlsx", "all"):
+            path = await XlsxExporter(fields).export(result, out_path)
             output_files.append(str(path))
 
         return result, output_files
@@ -190,8 +226,10 @@ def _show_result(result_data: dict, output_files: list[str]):
             rows.append(
                 {
                     "ID": msg["id"],
-                    "Date": msg["date"],
-                    "Text": (msg["text"][:100] + "...") if len(msg["text"]) > 100 else msg["text"],
+                    "Date": msg.get("date", ""),
+                    "Text": (msg["text"][:100] + "...")
+                    if len(msg.get("text", "")) > 100
+                    else msg.get("text", ""),
                     "Views": msg.get("views") or 0,
                     "Forwards": msg.get("forwards") or 0,
                     "Reactions": msg.get("reactions", {}).get("total", 0)
@@ -216,7 +254,8 @@ def _show_result(result_data: dict, output_files: list[str]):
         st.download_button(
             "Download JSON",
             data=json.dumps(result_data, ensure_ascii=False, indent=2, default=str),
-            file_name=f"{result_data['channel'].get('username', result_data['channel']['id'])}"
-            ".json",
+            file_name=(
+                f"{result_data['channel'].get('username', result_data['channel']['id'])}.json"
+            ),
             mime="application/json",
         )

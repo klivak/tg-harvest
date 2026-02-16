@@ -13,7 +13,8 @@ Parser for Telegram channels and chats via MTProto API. Extracts messages, media
 - **Incremental parsing** — only fetch new messages since last parse
 - **Analytics** — message activity charts, top posts, reaction breakdown
 - **Flexible filtering** — by date range, message limit
-- **Multiple export formats** — JSON, CSV, or both
+- **Multiple export formats** — JSON, CSV, Excel (.xlsx), or all at once
+- **Field selection** — choose which columns to export (id, text, date, views, etc.)
 - **Beautiful CLI** — progress bars, colored output, summary tables
 - **Rate limiting** — respects Telegram API limits, auto-handles FloodWait errors
 - **CI/CD** — GitHub Actions, ruff linting, pre-commit hooks
@@ -102,8 +103,17 @@ tg-parser parse @channel --limit 5000
 # Export to CSV
 tg-parser parse @channel --format csv
 
-# Export to both JSON and CSV
-tg-parser parse @channel --format both
+# Export to Excel (.xlsx) with formatting
+tg-parser parse @channel --format xlsx
+
+# Export to all formats (JSON + CSV + XLSX)
+tg-parser parse @channel --format all
+
+# Export only selected fields
+tg-parser parse @channel --fields id,text,date,views
+
+# Export specific fields to Excel
+tg-parser parse @channel --format xlsx --fields text,date,views,reactions_total
 
 # Custom output directory
 tg-parser parse @channel -o ./my_data
@@ -204,7 +214,7 @@ src/tg_parser/
   models/       Pydantic data models
   client/       Telegram session, rate limiter
   parsers/      Message/media/channel parsing
-  exporters/    JSON, CSV export
+  exporters/    JSON, CSV, Excel export (with field selection)
   storage/      Incremental parsing state
   search/       Search engine
   analytics/    Statistics and analytics

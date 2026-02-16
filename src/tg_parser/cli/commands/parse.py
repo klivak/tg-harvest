@@ -11,9 +11,14 @@ from tg_parser.cli.formatters import print_parse_summary
 from tg_parser.client.rate_limiter import RateLimiter
 from tg_parser.client.session import TelegramSession
 from tg_parser.config import Settings
-from tg_parser.config.constants import DEFAULT_EXPORT_FORMAT, SUPPORTED_FORMATS
+from tg_parser.config.constants import (
+    ALL_EXPORT_FIELDS,
+    DEFAULT_EXPORT_FORMAT,
+    SUPPORTED_FORMATS,
+)
 from tg_parser.exporters.csv_exporter import CsvExporter
 from tg_parser.exporters.json_exporter import JsonExporter
+from tg_parser.exporters.xlsx_exporter import XlsxExporter
 from tg_parser.parsers.channel_parser import ChannelParser
 from tg_parser.storage.state import StateManager
 from tg_parser.utils.date_utils import parse_date
@@ -65,6 +70,15 @@ console = Console()
     default=False,
     help="Only fetch new messages since last parse.",
 )
+@click.option(
+    "--fields",
+    default=None,
+    help=(
+        "Comma-separated list of fields to export. "
+        f"Available: {', '.join(ALL_EXPORT_FIELDS)}. "
+        "Default: all fields."
+    ),
+)
 def parse(
     channel: str,
     from_date: str | None,
@@ -73,13 +87,27 @@ def parse(
     export_format: str,
     output_dir: str | None,
     incremental: bool,
+    fields: str | None,
 ):
     """Parse messages from a Telegram channel or group.
 
     CHANNEL can be a username (@channel), invite link, or numeric ID.
     """
+    # Parse fields option
+    field_list = None
+    if fields:
+        field_list = [f.strip() for f in fields.split(",")]
+        invalid = [f for f in field_list if f not in ALL_EXPORT_FIELDS]
+        if invalid:
+            raise click.BadParameter(
+                f"Unknown fields: {', '.join(invalid)}. Available: {', '.join(ALL_EXPORT_FIELDS)}",
+                param_hint="--fields",
+            )
+
     asyncio.run(
-        _parse_async(channel, from_date, to_date, limit, export_format, output_dir, incremental)
+        _parse_async(
+            channel, from_date, to_date, limit, export_format, output_dir, incremental, field_list
+        )
     )
 
 
@@ -91,6 +119,7 @@ async def _parse_async(
     export_format: str,
     output_dir: str | None,
     incremental: bool,
+    fields: list[str] | None,
 ):
     settings = Settings()
     out_path = Path(output_dir) if output_dir else settings.output_dir
@@ -107,8 +136,6 @@ async def _parse_async(
     state = StateManager(settings.state_path)
     min_id = 0
     if incremental:
-        # We need to resolve the numeric ID for state lookup
-        # Will be done after connecting
         pass
 
     async with TelegramSession(settings) as session:
@@ -157,14 +184,16 @@ async def _parse_async(
         # Export
         output_files: list[str] = []
 
-        if export_format in ("json", "both"):
-            exporter = JsonExporter()
-            path = await exporter.export(result, out_path)
+        if export_format in ("json", "all"):
+            path = await JsonExporter(fields).export(result, out_path)
             output_files.append(str(path))
 
-        if export_format in ("csv", "both"):
-            exporter = CsvExporter()
-            path = await exporter.export(result, out_path)
+        if export_format in ("csv", "all"):
+            path = await CsvExporter(fields).export(result, out_path)
+            output_files.append(str(path))
+
+        if export_format in ("xlsx", "all"):
+            path = await XlsxExporter(fields).export(result, out_path)
             output_files.append(str(path))
 
         print_parse_summary(result, output_files)

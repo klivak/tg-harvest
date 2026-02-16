@@ -12,7 +12,31 @@ DEFAULT_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 # CLI defaults
 DEFAULT_MESSAGE_LIMIT = 0  # 0 = no limit
 DEFAULT_EXPORT_FORMAT = "json"
-SUPPORTED_FORMATS = ("json", "csv", "both")
+SUPPORTED_FORMATS = ("json", "csv", "xlsx", "all")
+
+# Exportable fields (user can select subset)
+ALL_EXPORT_FIELDS = (
+    "id",
+    "date",
+    "text",
+    "sender_id",
+    "post_author",
+    "views",
+    "forwards",
+    "replies_count",
+    "reactions_total",
+    "reactions_detail",
+    "media_type",
+    "media_file_name",
+    "media_url",
+    "forward_from_id",
+    "forward_from_name",
+    "reply_to_msg_id",
+    "grouped_id",
+    "is_pinned",
+    "is_edited",
+    "edit_date",
+)
 
 # Analytics defaults
 DEFAULT_TOP_N = 10

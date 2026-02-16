@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-16
+
+### Added
+
+- **Excel export** (`--format xlsx`) with openpyxl:
+  - Colored headers (dark blue with white text)
+  - Auto-width columns
+  - Frozen header row
+  - Autofilter
+  - Separate "Channel Info" sheet
+- **Field selection** for all export formats (JSON, CSV, XLSX):
+  - CLI: `--fields id,text,date,views` to export only selected columns
+  - Web UI: field selection checkboxes in parser page
+  - 20 available fields: id, date, text, sender_id, post_author, views, forwards, etc.
+- Export format `all` — exports to JSON + CSV + XLSX at once (replaces `both`)
+- Shared `build_row()` utility for consistent row building across exporters
+
+### Changed
+
+- `BaseExporter` now accepts optional `fields` parameter for field filtering
+- `SUPPORTED_FORMATS` updated: `("json", "csv", "xlsx", "all")`
+- CSV exporter refactored to use shared `build_row()` from base
+- JSON exporter supports flat field-filtered output when fields are selected
+
 ## [0.2.0] - 2026-02-16
 
 ### Added

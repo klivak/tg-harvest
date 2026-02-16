@@ -18,7 +18,7 @@ Telegram channel/chat parser via MTProto API (Telethon). Extracts messages, medi
 - **models/** — Pure Pydantic models (no Telethon imports): ParsedMessage, ChannelInfo, MediaInfo, ReactionsInfo, ParseResult
 - **client/** — TelegramSession (Telethon wrapper), RateLimiter
 - **parsers/** — Converts raw Telethon objects to Pydantic models: ChannelParser, MessageParser, MediaParser
-- **exporters/** — BaseExporter ABC, JsonExporter, CsvExporter
+- **exporters/** — BaseExporter ABC (with field selection), JsonExporter, CsvExporter, XlsxExporter
 - **storage/** — StateManager for incremental parsing state (parse_state.json)
 - **search/** — SearchEngine for full-text search across parsed JSON files
 - **analytics/** — ChannelStats for statistics and chart data
