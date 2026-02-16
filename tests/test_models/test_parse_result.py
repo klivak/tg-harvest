@@ -2,8 +2,8 @@
 
 from datetime import datetime, timezone
 
-from tg_parser.models.message import ParsedMessage
-from tg_parser.models.parse_result import ParseResult
+from tg_harvest.models.message import ParsedMessage
+from tg_harvest.models.parse_result import ParseResult
 
 
 class TestParseResult:

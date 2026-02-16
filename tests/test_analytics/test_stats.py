@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 
 import pytest
 
-from tg_parser.analytics.stats import ChannelStats
-from tg_parser.models.channel import ChannelInfo
-from tg_parser.models.media import MediaInfo, MediaType
-from tg_parser.models.message import ParsedMessage
-from tg_parser.models.parse_result import ParseResult
-from tg_parser.models.reaction import ReactionCount, ReactionsInfo
+from tg_harvest.analytics.stats import ChannelStats
+from tg_harvest.models.channel import ChannelInfo
+from tg_harvest.models.media import MediaInfo, MediaType
+from tg_harvest.models.message import ParsedMessage
+from tg_harvest.models.parse_result import ParseResult
+from tg_harvest.models.reaction import ReactionCount, ReactionsInfo
 
 
 @pytest.fixture

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 from telethon.tl import types
 
-from tg_parser.parsers.message_parser import parse_message
+from tg_harvest.parsers.message_parser import parse_message
 
 
 def _make_message(**kwargs):

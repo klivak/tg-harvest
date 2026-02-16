@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from tg_parser.models.channel import ChannelInfo
+from tg_harvest.models.channel import ChannelInfo
 
 
 class TestChannelInfo:

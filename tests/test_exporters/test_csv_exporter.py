@@ -4,7 +4,7 @@ import csv
 
 import pytest
 
-from tg_parser.exporters.csv_exporter import CsvExporter
+from tg_harvest.exporters.csv_exporter import CsvExporter
 
 
 class TestCsvExporter:

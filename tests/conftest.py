@@ -5,11 +5,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tg_parser.models.channel import ChannelInfo
-from tg_parser.models.media import MediaInfo, MediaType
-from tg_parser.models.message import EntityInfo, ForwardInfo, ParsedMessage, ReplyInfo
-from tg_parser.models.parse_result import ParseResult
-from tg_parser.models.reaction import ReactionCount, ReactionsInfo
+from tg_harvest.models.channel import ChannelInfo
+from tg_harvest.models.media import MediaInfo, MediaType
+from tg_harvest.models.message import EntityInfo, ForwardInfo, ParsedMessage, ReplyInfo
+from tg_harvest.models.parse_result import ParseResult
+from tg_harvest.models.reaction import ReactionCount, ReactionsInfo
 
 
 @pytest.fixture

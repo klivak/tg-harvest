@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-16
+
+### Changed
+
+- **Renamed project** from `tg-parser` to `tg-harvest`
+- Package renamed: `tg_parser` -> `tg_harvest`
+- CLI command renamed: `tg-parser` -> `tg-harvest`
+- Web entry renamed: `tg-parser-web` -> `tg-harvest-web`
+- Added MIT LICENSE file
+- Added 138 integration tests (302 total): project structure, import isolation,
+  CI config, export pipeline consistency, CLI structure verification
+
 ## [0.3.0] - 2026-02-16
 
 ### Added
@@ -33,16 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Streamlit Web UI** (`tg-parser web`) on port 8777:
+- **Streamlit Web UI** (`tg-harvest web`) on port 8777:
   - Auth status page with config viewer
   - Channels browser with search filter
   - Parse page with date pickers, progress bar, results table, download buttons
   - Search page with full-text search and filters
   - Analytics page with interactive Plotly charts
-- **Message search** (`tg-parser search`) across parsed JSON files:
+- **Message search** (`tg-harvest search`) across parsed JSON files:
   - Text keyword search
   - Filters: media type, min views, has reactions, date range, channel
-- **Incremental parsing** (`tg-parser parse -i`):
+- **Incremental parsing** (`tg-harvest parse -i`):
   - Tracks last parsed message ID per channel
   - Only fetches new messages since last parse
 - **Analytics** module:

@@ -6,10 +6,10 @@ import json
 import pytest
 from openpyxl import load_workbook
 
-from tg_parser.config.constants import ALL_EXPORT_FIELDS
-from tg_parser.exporters.csv_exporter import CsvExporter
-from tg_parser.exporters.json_exporter import JsonExporter
-from tg_parser.exporters.xlsx_exporter import XlsxExporter
+from tg_harvest.config.constants import ALL_EXPORT_FIELDS
+from tg_harvest.exporters.csv_exporter import CsvExporter
+from tg_harvest.exporters.json_exporter import JsonExporter
+from tg_harvest.exporters.xlsx_exporter import XlsxExporter
 
 
 class TestFullExportPipeline:

@@ -2,15 +2,15 @@
 
 ## Project Overview
 
-Telegram channel/chat parser via MTProto API (Telethon). Extracts messages, media metadata, reactions, views, forwards from any channel the user has access to — including restricted ones. Includes Streamlit web UI, search, incremental parsing, and analytics.
+TG Harvest — Telegram channel/chat data harvester via MTProto API (Telethon). Extracts messages, media metadata, reactions, views, forwards from any channel the user has access to — including restricted ones. Includes Streamlit web UI, search, incremental parsing, and analytics.
 
 ## Tech Stack
 
 - Python 3.11+, Telethon (MTProto), Pydantic v2, Click, Rich, aiofiles
 - Streamlit + Plotly for web UI
-- Package: `src/tg_parser/` (src layout)
-- CLI entry: `tg-parser` (defined in pyproject.toml `[project.scripts]`)
-- Web entry: `tg-parser web` or `tg-parser-web`
+- Package: `src/tg_harvest/` (src layout)
+- CLI entry: `tg-harvest` (defined in pyproject.toml `[project.scripts]`)
+- Web entry: `tg-harvest web` or `tg-harvest-web`
 
 ## Architecture
 
@@ -38,12 +38,12 @@ Telegram channel/chat parser via MTProto API (Telethon). Extracts messages, medi
 
 ```bash
 pip install -e .              # Install in dev mode
-tg-parser auth login          # Authenticate
-tg-parser channels list       # List channels
-tg-parser parse @channel      # Parse channel
-tg-parser parse @channel -i   # Incremental parse
-tg-parser search "keyword"    # Search parsed data
-tg-parser web                 # Start web UI (port 8777)
+tg-harvest auth login         # Authenticate
+tg-harvest channels list      # List channels
+tg-harvest parse @channel     # Parse channel
+tg-harvest parse @channel -i  # Incremental parse
+tg-harvest search "keyword"   # Search parsed data
+tg-harvest web                # Start web UI (port 8777)
 ```
 
 ## Testing

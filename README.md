@@ -1,8 +1,8 @@
-# Telegram API Parser
+# TG Harvest
 
 [![CI](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml)
 
-Parser for Telegram channels and chats via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel you have access to — including restricted channels where copying is disabled.
+Telegram channel/chat data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel you have access to — including restricted channels where copying is disabled.
 
 ## Features
 
@@ -69,95 +69,95 @@ TG_PHONE=+380123456789
 
 ```bash
 # Log in (interactive: phone code + optional 2FA)
-tg-parser auth login
+tg-harvest auth login
 
 # Check auth status
-tg-parser auth status
+tg-harvest auth status
 
 # Log out
-tg-parser auth logout
+tg-harvest auth logout
 ```
 
 ### List Channels
 
 ```bash
 # Show all accessible channels and groups
-tg-parser channels list
+tg-harvest channels list
 
 # Limit number of dialogs to scan
-tg-parser channels list -l 200
+tg-harvest channels list -l 200
 ```
 
 ### Parse Messages
 
 ```bash
 # Parse all messages from a channel
-tg-parser parse @channel_name
+tg-harvest parse @channel_name
 
 # Parse with date range
-tg-parser parse @channel -f 2024-01-01 -t 2024-12-31
+tg-harvest parse @channel -f 2024-01-01 -t 2024-12-31
 
 # Limit number of messages
-tg-parser parse @channel --limit 5000
+tg-harvest parse @channel --limit 5000
 
 # Export to CSV
-tg-parser parse @channel --format csv
+tg-harvest parse @channel --format csv
 
 # Export to Excel (.xlsx) with formatting
-tg-parser parse @channel --format xlsx
+tg-harvest parse @channel --format xlsx
 
 # Export to all formats (JSON + CSV + XLSX)
-tg-parser parse @channel --format all
+tg-harvest parse @channel --format all
 
 # Export only selected fields
-tg-parser parse @channel --fields id,text,date,views
+tg-harvest parse @channel --fields id,text,date,views
 
 # Export specific fields to Excel
-tg-parser parse @channel --format xlsx --fields text,date,views,reactions_total
+tg-harvest parse @channel --format xlsx --fields text,date,views,reactions_total
 
 # Custom output directory
-tg-parser parse @channel -o ./my_data
+tg-harvest parse @channel -o ./my_data
 
 # Parse by numeric ID (for private channels)
-tg-parser parse -1001234567890
+tg-harvest parse -1001234567890
 
 # Incremental mode (only new messages since last parse)
-tg-parser parse @channel -i
+tg-harvest parse @channel -i
 
 # Verbose mode (debug logging)
-tg-parser -v parse @channel
+tg-harvest -v parse @channel
 ```
 
 ### Search Messages
 
 ```bash
 # Search across all parsed data
-tg-parser search "keyword"
+tg-harvest search "keyword"
 
 # Filter by media type
-tg-parser search "photo" --media-type photo
+tg-harvest search "photo" --media-type photo
 
 # Filter by minimum views
-tg-parser search "news" --min-views 1000
+tg-harvest search "news" --min-views 1000
 
 # Only messages with reactions
-tg-parser search "announcement" --has-reactions
+tg-harvest search "announcement" --has-reactions
 
 # Date range filter
-tg-parser search "update" --from-date 2024-01-01 --to-date 2024-06-30
+tg-harvest search "update" --from-date 2024-01-01 --to-date 2024-06-30
 
 # Limit results
-tg-parser search "crypto" -n 100
+tg-harvest search "crypto" -n 100
 ```
 
 ### Web UI
 
 ```bash
 # Start Streamlit web interface (port 8777)
-tg-parser web
+tg-harvest web
 
 # Custom port
-tg-parser web -p 9000
+tg-harvest web -p 9000
 ```
 
 The web UI provides:
@@ -209,7 +209,7 @@ Flattened table format with key fields, opens in Excel/Google Sheets.
 ## Project Structure
 
 ```
-src/tg_parser/
+src/tg_harvest/
   config/       Settings, constants
   models/       Pydantic data models
   client/       Telegram session, rate limiter
@@ -227,7 +227,7 @@ src/tg_parser/
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TG_SESSION_NAME` | `tg_parser` | Session file name |
+| `TG_SESSION_NAME` | `tg_harvest` | Session file name |
 | `TG_FLOOD_SLEEP_THRESHOLD` | `60` | Auto-sleep for FloodWait errors (seconds) |
 | `TG_REQUEST_DELAY` | `1.0` | Delay between API requests (seconds) |
 | `TG_OUTPUT_DIR` | `./output` | Default output directory |

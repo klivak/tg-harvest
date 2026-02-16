@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from tg_parser.models.message import EntityInfo, ForwardInfo, ParsedMessage, ReplyInfo
+from tg_harvest.models.message import EntityInfo, ForwardInfo, ParsedMessage, ReplyInfo
 
 
 class TestForwardInfo:

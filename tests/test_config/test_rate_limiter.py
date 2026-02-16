@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from tg_parser.client.rate_limiter import RateLimiter
+from tg_harvest.client.rate_limiter import RateLimiter
 
 
 class TestRateLimiter:

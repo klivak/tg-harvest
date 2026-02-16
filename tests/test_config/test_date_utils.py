@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from tg_parser.utils.date_utils import ensure_utc, parse_date
+from tg_harvest.utils.date_utils import ensure_utc, parse_date
 
 
 class TestParseDate:

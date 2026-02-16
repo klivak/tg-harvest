@@ -1,6 +1,6 @@
 """Tests for reaction models."""
 
-from tg_parser.models.reaction import ReactionCount, ReactionsInfo
+from tg_harvest.models.reaction import ReactionCount, ReactionsInfo
 
 
 class TestReactionCount:

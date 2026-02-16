@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from tg_parser.exporters.json_exporter import JsonExporter
+from tg_harvest.exporters.json_exporter import JsonExporter
 
 
 class TestJsonExporter:

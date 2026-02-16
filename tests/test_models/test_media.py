@@ -1,6 +1,6 @@
 """Tests for media models."""
 
-from tg_parser.models.media import MediaInfo, MediaType
+from tg_harvest.models.media import MediaInfo, MediaType
 
 
 class TestMediaType:

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent.parent
-SRC = ROOT / "src" / "tg_parser"
+SRC = ROOT / "src" / "tg_harvest"
 
 
 class TestProjectFiles:
@@ -65,7 +65,7 @@ class TestPyprojectToml:
         return (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
     def test_has_name(self, pyproject_text):
-        assert 'name = "tg-parser"' in pyproject_text
+        assert 'name = "tg-harvest"' in pyproject_text
 
     def test_has_version(self, pyproject_text):
         assert "version =" in pyproject_text
@@ -74,10 +74,10 @@ class TestPyprojectToml:
         assert ">=3.11" in pyproject_text
 
     def test_has_cli_script(self, pyproject_text):
-        assert 'tg-parser = "tg_parser.cli.app:cli"' in pyproject_text
+        assert 'tg-harvest = "tg_harvest.cli.app:cli"' in pyproject_text
 
     def test_has_web_script(self, pyproject_text):
-        assert 'tg-parser-web = "tg_parser.web.app:main"' in pyproject_text
+        assert 'tg-harvest-web = "tg_harvest.web.app:main"' in pyproject_text
 
     def test_has_src_layout(self, pyproject_text):
         assert 'where = ["src"]' in pyproject_text
@@ -116,7 +116,7 @@ class TestVersionConsistency:
     """Verify version is consistent across project."""
 
     def test_pyproject_and_init_version_match(self):
-        import tg_parser
+        import tg_harvest
 
         pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         # Extract version from pyproject.toml
@@ -127,13 +127,13 @@ class TestVersionConsistency:
         else:
             pytest.fail("No version in pyproject.toml")
 
-        assert tg_parser.__version__ == pyproject_version
+        assert tg_harvest.__version__ == pyproject_version
 
     def test_changelog_has_current_version(self):
-        import tg_parser
+        import tg_harvest
 
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-        assert f"[{tg_parser.__version__}]" in changelog
+        assert f"[{tg_harvest.__version__}]" in changelog
 
 
 class TestGitignore:
@@ -151,7 +151,7 @@ class TestGitignore:
             ".venv/",
             ".env",
             "*.session",
-            "output/",
+            "output/*",
             ".egg-info/",
         ],
     )

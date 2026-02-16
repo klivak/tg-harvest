@@ -5,10 +5,10 @@ import json
 
 import pytest
 
-from tg_parser.config.constants import ALL_EXPORT_FIELDS
-from tg_parser.exporters.base import build_row, filter_fields, resolve_fields
-from tg_parser.exporters.csv_exporter import CsvExporter
-from tg_parser.exporters.json_exporter import JsonExporter
+from tg_harvest.config.constants import ALL_EXPORT_FIELDS
+from tg_harvest.exporters.base import build_row, filter_fields, resolve_fields
+from tg_harvest.exporters.csv_exporter import CsvExporter
+from tg_harvest.exporters.json_exporter import JsonExporter
 
 
 class TestBuildRow:

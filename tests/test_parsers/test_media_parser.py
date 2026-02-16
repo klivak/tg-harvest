@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 from telethon.tl import types
 
-from tg_parser.models.media import MediaType
-from tg_parser.parsers.media_parser import parse_media
+from tg_harvest.models.media import MediaType
+from tg_harvest.parsers.media_parser import parse_media
 
 
 class TestParseMedia:

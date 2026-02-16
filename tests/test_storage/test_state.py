@@ -2,7 +2,7 @@
 
 import json
 
-from tg_parser.storage.state import StateManager
+from tg_harvest.storage.state import StateManager
 
 
 class TestStateManager:

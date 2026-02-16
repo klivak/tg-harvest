@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tg-parser"
-version = "0.3.0"
-description = "Telegram channel/chat parser via MTProto API"
+name = "tg-harvest"
+version = "0.4.0"
+description = "Telegram channel/chat data harvester via MTProto API"
 license = {text = "MIT"}
 requires-python = ">=3.11"
 dependencies = [
@@ -31,8 +31,8 @@ dev = [
 ]
 
 [project.scripts]
-tg-parser = "tg_parser.cli.app:cli"
-tg-parser-web = "tg_parser.web.app:main"
+tg-harvest = "tg_harvest.cli.app:cli"
+tg-harvest-web = "tg_harvest.web.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

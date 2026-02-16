@@ -3,7 +3,7 @@
 import pytest
 from openpyxl import load_workbook
 
-from tg_parser.exporters.xlsx_exporter import XlsxExporter
+from tg_harvest.exporters.xlsx_exporter import XlsxExporter
 
 
 class TestXlsxExporter:

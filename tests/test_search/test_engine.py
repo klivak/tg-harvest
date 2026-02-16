@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from tg_parser.models.media import MediaType
-from tg_parser.search.engine import SearchEngine, SearchFilters
+from tg_harvest.models.media import MediaType
+from tg_harvest.search.engine import SearchEngine, SearchFilters
 
 
 class TestSearchEngine:

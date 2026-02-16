@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tg_parser.config.settings import Settings
+from tg_harvest.config.settings import Settings
 
 
 class TestSettings:
@@ -24,7 +24,7 @@ class TestSettings:
         monkeypatch.setenv("TG_PHONE", "+1")
 
         settings = Settings()
-        assert settings.session_name == "tg_parser"
+        assert settings.session_name == "tg_harvest"
         assert settings.flood_sleep_threshold == 60
         assert settings.request_delay == 1.0
         assert settings.output_dir == Path("./output")

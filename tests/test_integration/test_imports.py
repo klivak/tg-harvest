@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).parent.parent.parent / "src" / "tg_parser"
+SRC = Path(__file__).parent.parent.parent / "src" / "tg_harvest"
 
 
 class TestModuleImports:
@@ -15,45 +15,45 @@ class TestModuleImports:
     @pytest.mark.parametrize(
         "module",
         [
-            "tg_parser",
-            "tg_parser.config",
-            "tg_parser.config.settings",
-            "tg_parser.config.constants",
-            "tg_parser.models",
-            "tg_parser.models.channel",
-            "tg_parser.models.message",
-            "tg_parser.models.media",
-            "tg_parser.models.reaction",
-            "tg_parser.models.parse_result",
-            "tg_parser.exporters",
-            "tg_parser.exporters.base",
-            "tg_parser.exporters.json_exporter",
-            "tg_parser.exporters.csv_exporter",
-            "tg_parser.exporters.xlsx_exporter",
-            "tg_parser.storage",
-            "tg_parser.storage.state",
-            "tg_parser.search",
-            "tg_parser.search.engine",
-            "tg_parser.analytics",
-            "tg_parser.analytics.stats",
-            "tg_parser.utils",
-            "tg_parser.utils.logging",
-            "tg_parser.utils.date_utils",
-            "tg_parser.cli",
-            "tg_parser.cli.app",
-            "tg_parser.cli.formatters",
-            "tg_parser.cli.commands.parse",
-            "tg_parser.cli.commands.auth",
-            "tg_parser.cli.commands.channels",
-            "tg_parser.cli.commands.search",
-            "tg_parser.cli.commands.web",
-            "tg_parser.client",
-            "tg_parser.client.session",
-            "tg_parser.client.rate_limiter",
-            "tg_parser.parsers",
-            "tg_parser.parsers.channel_parser",
-            "tg_parser.parsers.message_parser",
-            "tg_parser.parsers.media_parser",
+            "tg_harvest",
+            "tg_harvest.config",
+            "tg_harvest.config.settings",
+            "tg_harvest.config.constants",
+            "tg_harvest.models",
+            "tg_harvest.models.channel",
+            "tg_harvest.models.message",
+            "tg_harvest.models.media",
+            "tg_harvest.models.reaction",
+            "tg_harvest.models.parse_result",
+            "tg_harvest.exporters",
+            "tg_harvest.exporters.base",
+            "tg_harvest.exporters.json_exporter",
+            "tg_harvest.exporters.csv_exporter",
+            "tg_harvest.exporters.xlsx_exporter",
+            "tg_harvest.storage",
+            "tg_harvest.storage.state",
+            "tg_harvest.search",
+            "tg_harvest.search.engine",
+            "tg_harvest.analytics",
+            "tg_harvest.analytics.stats",
+            "tg_harvest.utils",
+            "tg_harvest.utils.logging",
+            "tg_harvest.utils.date_utils",
+            "tg_harvest.cli",
+            "tg_harvest.cli.app",
+            "tg_harvest.cli.formatters",
+            "tg_harvest.cli.commands.parse",
+            "tg_harvest.cli.commands.auth",
+            "tg_harvest.cli.commands.channels",
+            "tg_harvest.cli.commands.search",
+            "tg_harvest.cli.commands.web",
+            "tg_harvest.client",
+            "tg_harvest.client.session",
+            "tg_harvest.client.rate_limiter",
+            "tg_harvest.parsers",
+            "tg_harvest.parsers.channel_parser",
+            "tg_harvest.parsers.message_parser",
+            "tg_harvest.parsers.media_parser",
         ],
     )
     def test_module_imports(self, module):
@@ -67,7 +67,7 @@ class TestTelethonIsolation:
     ALLOWED_DIRS = {"client", "parsers"}
 
     def _get_all_py_files(self):
-        """Get all .py files in src/tg_parser, excluding __pycache__."""
+        """Get all .py files in src/tg_harvest, excluding __pycache__."""
         return [p for p in SRC.rglob("*.py") if "__pycache__" not in str(p)]
 
     def _get_imports(self, filepath: Path) -> list[str]:
@@ -85,7 +85,7 @@ class TestTelethonIsolation:
         return imports
 
     def _get_package_dir(self, filepath: Path) -> str | None:
-        """Get the top-level package directory relative to tg_parser/."""
+        """Get the top-level package directory relative to tg_harvest/."""
         relative = filepath.relative_to(SRC)
         parts = relative.parts
         if len(parts) > 1:
@@ -112,26 +112,26 @@ class TestExporterConsistency:
     """Verify exporter classes follow the expected interface."""
 
     def test_all_exporters_in_init(self):
-        from tg_parser.exporters import __all__
+        from tg_harvest.exporters import __all__
 
         assert "JsonExporter" in __all__
         assert "CsvExporter" in __all__
         assert "XlsxExporter" in __all__
 
     def test_exporters_inherit_base(self):
-        from tg_parser.exporters.base import BaseExporter
-        from tg_parser.exporters.csv_exporter import CsvExporter
-        from tg_parser.exporters.json_exporter import JsonExporter
-        from tg_parser.exporters.xlsx_exporter import XlsxExporter
+        from tg_harvest.exporters.base import BaseExporter
+        from tg_harvest.exporters.csv_exporter import CsvExporter
+        from tg_harvest.exporters.json_exporter import JsonExporter
+        from tg_harvest.exporters.xlsx_exporter import XlsxExporter
 
         assert issubclass(CsvExporter, BaseExporter)
         assert issubclass(JsonExporter, BaseExporter)
         assert issubclass(XlsxExporter, BaseExporter)
 
     def test_exporters_accept_fields(self):
-        from tg_parser.exporters.csv_exporter import CsvExporter
-        from tg_parser.exporters.json_exporter import JsonExporter
-        from tg_parser.exporters.xlsx_exporter import XlsxExporter
+        from tg_harvest.exporters.csv_exporter import CsvExporter
+        from tg_harvest.exporters.json_exporter import JsonExporter
+        from tg_harvest.exporters.xlsx_exporter import XlsxExporter
 
         fields = ["id", "text", "date"]
         csv_exp = CsvExporter(fields=fields)
@@ -143,10 +143,10 @@ class TestExporterConsistency:
         assert xlsx_exp.fields == fields
 
     def test_exporters_default_all_fields(self):
-        from tg_parser.config.constants import ALL_EXPORT_FIELDS
-        from tg_parser.exporters.csv_exporter import CsvExporter
-        from tg_parser.exporters.json_exporter import JsonExporter
-        from tg_parser.exporters.xlsx_exporter import XlsxExporter
+        from tg_harvest.config.constants import ALL_EXPORT_FIELDS
+        from tg_harvest.exporters.csv_exporter import CsvExporter
+        from tg_harvest.exporters.json_exporter import JsonExporter
+        from tg_harvest.exporters.xlsx_exporter import XlsxExporter
 
         all_fields = list(ALL_EXPORT_FIELDS)
         assert CsvExporter().fields == all_fields
@@ -158,7 +158,7 @@ class TestModelConsistency:
     """Verify Pydantic models are properly defined."""
 
     def test_all_models_in_init(self):
-        from tg_parser.models import __all__
+        from tg_harvest.models import __all__
 
         expected = [
             "ChannelInfo",
@@ -177,11 +177,11 @@ class TestModelConsistency:
     def test_models_are_pydantic(self):
         from pydantic import BaseModel
 
-        from tg_parser.models.channel import ChannelInfo
-        from tg_parser.models.media import MediaInfo
-        from tg_parser.models.message import ForwardInfo, ParsedMessage, ReplyInfo
-        from tg_parser.models.parse_result import ParseResult
-        from tg_parser.models.reaction import ReactionCount, ReactionsInfo
+        from tg_harvest.models.channel import ChannelInfo
+        from tg_harvest.models.media import MediaInfo
+        from tg_harvest.models.message import ForwardInfo, ParsedMessage, ReplyInfo
+        from tg_harvest.models.parse_result import ParseResult
+        from tg_harvest.models.reaction import ReactionCount, ReactionsInfo
 
         for model in [
             ChannelInfo,
@@ -211,7 +211,7 @@ class TestCLIStructure:
     """Verify CLI commands are properly registered."""
 
     def test_cli_has_all_commands(self):
-        from tg_parser.cli.app import cli
+        from tg_harvest.cli.app import cli
 
         command_names = list(cli.commands.keys())
         assert "auth" in command_names
@@ -223,18 +223,18 @@ class TestCLIStructure:
     def test_cli_version(self):
         from click.testing import CliRunner
 
-        import tg_parser
-        from tg_parser.cli.app import cli
+        import tg_harvest
+        from tg_harvest.cli.app import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert tg_parser.__version__ in result.output
+        assert tg_harvest.__version__ in result.output
 
     def test_cli_help(self):
         from click.testing import CliRunner
 
-        from tg_parser.cli.app import cli
+        from tg_harvest.cli.app import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["--help"])
@@ -244,7 +244,7 @@ class TestCLIStructure:
     def test_parse_help(self):
         from click.testing import CliRunner
 
-        from tg_parser.cli.app import cli
+        from tg_harvest.cli.app import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["parse", "--help"])
@@ -256,7 +256,7 @@ class TestCLIStructure:
     def test_search_help(self):
         from click.testing import CliRunner
 
-        from tg_parser.cli.app import cli
+        from tg_harvest.cli.app import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["search", "--help"])
@@ -265,7 +265,7 @@ class TestCLIStructure:
     def test_channels_list_help(self):
         from click.testing import CliRunner
 
-        from tg_parser.cli.app import cli
+        from tg_harvest.cli.app import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["channels", "list", "--help"])
@@ -277,7 +277,7 @@ class TestConstantsConsistency:
     """Verify constants are consistent with actual usage."""
 
     def test_supported_formats(self):
-        from tg_parser.config.constants import SUPPORTED_FORMATS
+        from tg_harvest.config.constants import SUPPORTED_FORMATS
 
         assert "json" in SUPPORTED_FORMATS
         assert "csv" in SUPPORTED_FORMATS
@@ -286,9 +286,9 @@ class TestConstantsConsistency:
 
     def test_all_export_fields_match_build_row(self):
         """ALL_EXPORT_FIELDS must match the keys produced by build_row()."""
-        from tg_parser.config.constants import ALL_EXPORT_FIELDS
-        from tg_parser.exporters.base import build_row
-        from tg_parser.models.message import ParsedMessage
+        from tg_harvest.config.constants import ALL_EXPORT_FIELDS
+        from tg_harvest.exporters.base import build_row
+        from tg_harvest.models.message import ParsedMessage
 
         msg = ParsedMessage(
             id=1,
@@ -302,6 +302,6 @@ class TestConstantsConsistency:
         )
 
     def test_default_web_port(self):
-        from tg_parser.config.constants import DEFAULT_WEB_PORT
+        from tg_harvest.config.constants import DEFAULT_WEB_PORT
 
         assert DEFAULT_WEB_PORT == 8777
