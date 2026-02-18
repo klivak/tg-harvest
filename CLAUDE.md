@@ -33,6 +33,7 @@ TG Harvest — Telegram channel/chat data harvester via MTProto API (Telethon). 
 - Async throughout (Telethon requires it); Click commands use `asyncio.run()`
 - Environment variables prefixed with `TG_` (TG_API_ID, TG_API_HASH, TG_PHONE)
 - Web UI runs on port 8777 by default (configurable via TG_WEB_PORT)
+- **README is bilingual (EN + UK in one file)**: whenever README.md is updated, both the English and Ukrainian sections must be updated together — never update one without the other
 
 ## Commands
 
