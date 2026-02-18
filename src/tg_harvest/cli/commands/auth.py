@@ -47,7 +47,9 @@ def status():
                 if me.username:
                     console.print(f"[dim]Username:[/dim] @{me.username}")
                 if me.phone:
-                    console.print(f"[dim]Phone:[/dim] +{me.phone}")
+                    phone = me.phone
+                    masked = f"+{phone[:3]}***{phone[-4:]}" if len(phone) >= 7 else "+***"
+                    console.print(f"[dim]Phone:[/dim] {masked}")
             else:
                 console.print("[yellow]Not authenticated. Run:[/yellow] tg-harvest auth login")
         finally:

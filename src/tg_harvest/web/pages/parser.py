@@ -206,7 +206,9 @@ async def _parse_async(
     from tg_harvest.parsers.channel_parser import ChannelParser
     from tg_harvest.storage.state import StateManager
 
-    out_path = Path(output_dir)
+    out_path = Path(output_dir).resolve()
+    if ".." in Path(output_dir).parts:
+        raise ValueError("Output directory must not contain '..' path components.")
 
     fd = (
         datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)

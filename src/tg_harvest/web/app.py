@@ -25,7 +25,7 @@ def main():
             "--browser.gatherUsageStats",
             "false",
         ],
-        check=False,
+        check=True,
     )
 
 

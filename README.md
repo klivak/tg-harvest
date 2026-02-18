@@ -286,6 +286,30 @@ src/tg_harvest/
 
 ---
 
+## Security
+
+### Credential storage
+- API keys (`TG_API_ID`, `TG_API_HASH`, `TG_PHONE`) are loaded from `.env` which is **gitignored** — never committed
+- Telegram session files (`sessions/*.session`) are **gitignored** — contain auth tokens, protect with filesystem permissions (`chmod 600 sessions/`) on shared systems
+- Parsed data (`output/`) is **gitignored**
+- Phone numbers are masked in all UI output (`+380***4567`)
+- 2FA password input uses `getpass` — not echoed to terminal
+
+### Input handling
+- Search queries are regex-escaped before use (`re.escape`)
+- Output directory is validated against `..` path traversal
+- All data models validated through Pydantic v2 before use
+
+### Web UI
+- Message text is displayed via `st.dataframe()` — not rendered as markdown (no XSS)
+- Translation strings are static files — never user-controlled
+- **Not designed for public internet exposure** — run locally or behind a reverse proxy with authentication if exposed
+
+### Responsible use
+TG Harvest accesses only data you can already see as a Telegram member. It does not bypass access controls — only UI copy restrictions. Respect Telegram's Terms of Service and applicable laws when collecting data.
+
+---
+
 ## Development
 
 ```bash
@@ -588,6 +612,30 @@ src/tg_harvest/
 | `TG_REQUEST_DELAY` | `1.0` | Затримка між запитами до API (секунди) |
 | `TG_OUTPUT_DIR` | `./output` | Директорія виводу за замовчуванням |
 | `TG_WEB_PORT` | `8777` | Порт веб-інтерфейсу |
+
+---
+
+## Безпека
+
+### Зберігання ключів
+- API-ключі (`TG_API_ID`, `TG_API_HASH`, `TG_PHONE`) завантажуються з `.env`, який **виключено з git** — ніколи не комітяться
+- Файли сесій Telegram (`sessions/*.session`) **виключено з git** — містять токени авторизації; захистіть правами файлової системи (`chmod 600 sessions/`) на спільних серверах
+- Розпарсені дані (`output/`) **виключено з git**
+- Номери телефонів маскуються у всіх виводах (`+380***4567`)
+- Введення пароля 2FA використовує `getpass` — пароль не відображається в терміналі
+
+### Обробка введення
+- Пошукові запити екрануються через `re.escape` перед використанням
+- Директорія виводу перевіряється на path traversal (`..`)
+- Усі дані валідуються через Pydantic v2 перед використанням
+
+### Веб-інтерфейс
+- Текст повідомлень відображається через `st.dataframe()` — не рендериться як markdown (немає XSS)
+- Рядки перекладів — статичні файли, не залежать від введення користувача
+- **Не призначений для публічного доступу** — запускайте локально або за reverse proxy з автентифікацією
+
+### Відповідальне використання
+TG Harvest отримує доступ лише до даних, які ви вже можете бачити як учасник Telegram. Програма не обходить контроль доступу — лише UI-обмеження копіювання. Дотримуйтеся Умов використання Telegram і чинного законодавства при збиранні даних.
 
 ---
 

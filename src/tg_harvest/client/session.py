@@ -55,7 +55,9 @@ class TelegramSession:
         try:
             await self._client.sign_in(self._settings.phone, code)
         except SessionPasswordNeededError:
-            password = input("Two-factor authentication enabled. Enter your password: ")
+            import getpass
+
+            password = getpass.getpass("Two-factor authentication enabled. Enter your password: ")
             await self._client.sign_in(password=password)
 
         me = await self._client.get_me()

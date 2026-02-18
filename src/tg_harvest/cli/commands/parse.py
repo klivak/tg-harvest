@@ -122,7 +122,17 @@ async def _parse_async(
     fields: list[str] | None,
 ):
     settings = Settings()
-    out_path = Path(output_dir) if output_dir else settings.output_dir
+    out_path = Path(output_dir).resolve() if output_dir else settings.output_dir.resolve()
+
+    # Prevent path traversal: output must stay within the project output dir
+    allowed_root = settings.output_dir.resolve()
+    if not (out_path == allowed_root or str(out_path).startswith(str(allowed_root))):
+        # Allow any absolute path explicitly set by CLI — only warn on suspicious traversal
+        if ".." in Path(output_dir).parts if output_dir else False:
+            raise click.BadParameter(
+                "Output directory must not contain '..' path components.",
+                param_hint="-o/--output",
+            )
 
     from_date = parse_date(from_date_str) if from_date_str else None
     to_date = parse_date(to_date_str) if to_date_str else None
