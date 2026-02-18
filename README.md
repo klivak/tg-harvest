@@ -1,6 +1,6 @@
 # TG Harvest
 
-[![CI](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml)
+[![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
 
 Telegram channel/chat data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel you have access to — including restricted channels where copying is disabled.
 
@@ -9,8 +9,8 @@ Telegram channel/chat data harvester via MTProto API. Extracts messages, media m
 ## Quick Start
 
 ```bash
-git clone https://github.com/klivak/telegram-api-parser.git
-cd telegram-api-parser
+git clone https://github.com/klivak/tg-harvest.git
+cd tg-harvest
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .
 cp .env.example .env          # fill in TG_API_ID, TG_API_HASH, TG_PHONE
@@ -94,8 +94,8 @@ TG Harvest can extract data from channels and groups where Telegram's UI disable
 ## Installation
 
 ```bash
-git clone https://github.com/klivak/telegram-api-parser.git
-cd telegram-api-parser
+git clone https://github.com/klivak/tg-harvest.git
+cd tg-harvest
 
 # Create virtual environment
 python -m venv .venv
@@ -368,15 +368,15 @@ MIT
 
 # TG Harvest (Українська)
 
-[![CI](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml)
+[![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
 
 Інструмент для збору даних з Telegram-каналів і чатів через MTProto API.
 
 ## Швидкий старт
 
 ```bash
-git clone https://github.com/klivak/telegram-api-parser.git
-cd telegram-api-parser
+git clone https://github.com/klivak/tg-harvest.git
+cd tg-harvest
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .
 cp .env.example .env          # вписати TG_API_ID, TG_API_HASH, TG_PHONE
@@ -457,8 +457,8 @@ TG Harvest може витягувати дані з каналів і груп,
 ## Встановлення
 
 ```bash
-git clone https://github.com/klivak/telegram-api-parser.git
-cd telegram-api-parser
+git clone https://github.com/klivak/tg-harvest.git
+cd tg-harvest
 
 # Створити віртуальне середовище
 python -m venv .venv
