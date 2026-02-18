@@ -14,6 +14,10 @@ class TelegramSession:
     """Wraps TelegramClient with authentication and lifecycle management."""
 
     def __init__(self, settings: Settings):
+        if not settings.api_id or not settings.api_hash:
+            raise ValueError(
+                "TG_API_ID and TG_API_HASH are required. Set them in .env or environment variables."
+            )
         self._settings = settings
         self._client = TelegramClient(
             str(settings.session_path),

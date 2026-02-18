@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from tg_harvest.config.settings import Settings
 
 
@@ -53,10 +51,12 @@ class TestSettings:
         settings = Settings()
         assert settings.session_path == Path("./sessions/test_sess")
 
-    def test_missing_required_fields(self, monkeypatch):
+    def test_missing_fields_default_to_none(self, monkeypatch):
         monkeypatch.delenv("TG_API_ID", raising=False)
         monkeypatch.delenv("TG_API_HASH", raising=False)
         monkeypatch.delenv("TG_PHONE", raising=False)
 
-        with pytest.raises(Exception):
-            Settings(_env_file=None)
+        settings = Settings(_env_file=None)
+        assert settings.api_id is None
+        assert settings.api_hash is None
+        assert settings.phone is None

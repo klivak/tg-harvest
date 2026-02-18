@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,9 +14,23 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    api_id: int
-    api_hash: str
-    phone: str
+    api_id: int | None = None
+    api_hash: str | None = None
+    phone: str | None = None
+
+    @field_validator("api_id", mode="before")
+    @classmethod
+    def empty_str_to_none_int(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
+    @field_validator("api_hash", "phone", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
     session_name: str = "tg_harvest"
     flood_sleep_threshold: int = 60
