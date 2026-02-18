@@ -6,6 +6,23 @@ Telegram channel/chat data harvester via MTProto API. Extracts messages, media m
 
 **Use cases:** Telegram channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management.
 
+## Quick Start
+
+```bash
+git clone https://github.com/klivak/telegram-api-parser.git
+cd telegram-api-parser
+python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e .
+cp .env.example .env          # fill in TG_API_ID, TG_API_HASH, TG_PHONE
+tg-harvest auth login         # authenticate once
+tg-harvest channels list      # see your channels
+tg-harvest parse @channel     # parse a public channel
+tg-harvest parse -1001234567890  # parse a private channel by ID
+tg-harvest web                # open web UI at http://localhost:8777
+```
+
+---
+
 **Keywords:** telegram parser, telegram scraper, telegram channel export, telegram messages download, telegram analytics, telegram data extraction, telethon, telegram api, telegram backup, telegram archive, telegram channel statistics, telegram reactions, telegram views counter, restricted channel parser, private channel export, telegram to excel, telegram to csv, telegram to json, telegram content analysis, telegram monitoring tool
 
 ---
@@ -342,7 +359,24 @@ MIT
 
 [![CI](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/telegram-api-parser/actions/workflows/ci.yml)
 
-Інструмент для збору даних з Telegram-каналів і чатів через MTProto API. Витягує повідомлення, метадані медіа, реакції, перегляди, репости з будь-якого каналу, учасником якого ви є — включно з каналами з вимкненим копіюванням.
+Інструмент для збору даних з Telegram-каналів і чатів через MTProto API.
+
+## Швидкий старт
+
+```bash
+git clone https://github.com/klivak/telegram-api-parser.git
+cd telegram-api-parser
+python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e .
+cp .env.example .env          # вписати TG_API_ID, TG_API_HASH, TG_PHONE
+tg-harvest auth login         # авторизуватись один раз
+tg-harvest channels list      # переглянути канали
+tg-harvest parse @channel     # парсити публічний канал
+tg-harvest parse -1001234567890  # парсити приватний канал за ID
+tg-harvest web                # відкрити веб-інтерфейс на http://localhost:8777
+```
+
+Витягує повідомлення, метадані медіа, реакції, перегляди, репости з будь-якого каналу, учасником якого ви є — включно з каналами з вимкненим копіюванням.
 
 ---
 
