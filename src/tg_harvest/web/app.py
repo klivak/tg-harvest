@@ -38,34 +38,50 @@ if __name__ == "__main__" or st.runtime.exists():
     )
 
     from tg_harvest import __version__
+    from tg_harvest.web.i18n import LANGUAGES, t
+
+    # Language selector — must be first so all subsequent t() calls use the correct lang
+    lang_label = st.sidebar.selectbox(
+        t("app.lang_selector_label"),
+        list(LANGUAGES.keys()),
+        key="lang_label",
+    )
+    st.session_state["lang"] = LANGUAGES[lang_label]
 
     st.sidebar.title("TG Harvest")
+
     page = st.sidebar.radio(
-        "Navigation",
-        ["Auth Status", "Channels", "Parse", "Search", "Analytics"],
+        t("app.nav_label"),
+        [
+            t("app.page_auth"),
+            t("app.page_channels"),
+            t("app.page_parse"),
+            t("app.page_search"),
+            t("app.page_analytics"),
+        ],
         label_visibility="collapsed",
     )
     st.sidebar.divider()
-    st.sidebar.caption("Auth \u2192 Channels \u2192 Parse \u2192 Search \u2192 Analytics")
+    st.sidebar.caption(t("app.workflow_caption"))
     st.sidebar.caption(f"v{__version__}")
 
-    if page == "Auth Status":
+    if page == t("app.page_auth"):
         from tg_harvest.web.pages.auth import render
 
         render()
-    elif page == "Channels":
+    elif page == t("app.page_channels"):
         from tg_harvest.web.pages.channels import render
 
         render()
-    elif page == "Parse":
+    elif page == t("app.page_parse"):
         from tg_harvest.web.pages.parser import render
 
         render()
-    elif page == "Search":
+    elif page == t("app.page_search"):
         from tg_harvest.web.pages.search import render
 
         render()
-    elif page == "Analytics":
+    elif page == t("app.page_analytics"):
         from tg_harvest.web.pages.analytics import render
 
         render()

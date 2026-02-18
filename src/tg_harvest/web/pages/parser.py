@@ -13,11 +13,18 @@ import streamlit as st
 from tg_harvest.config import Settings
 from tg_harvest.config.constants import ALL_EXPORT_FIELDS
 from tg_harvest.exporters.base import build_row, filter_fields
+from tg_harvest.web.i18n import t
+
+
+def _truncate(text: str | None, limit: int = 100) -> str:
+    if not text:
+        return ""
+    return (text[:limit] + "...") if len(text) > limit else text
 
 
 def render():
-    st.header("Parse Channel")
-    st.caption("Step 3 — extract messages from a Telegram channel or group")
+    st.header(t("parser.header"))
+    st.caption(t("parser.caption"))
 
     try:
         settings = Settings()
@@ -25,38 +32,41 @@ def render():
         st.error(f"Settings error: {e}")
         return
 
+    with st.expander(t("parser.tips_expander"), expanded=False):
+        st.markdown(t("parser.tips_body"))
+
     # Channel input
     col1, col2 = st.columns([3, 1])
     with col1:
         channel = st.text_input(
-            "Channel",
-            placeholder="@channel_name or numeric ID",
+            t("parser.channel_label"),
+            placeholder=t("parser.channel_placeholder"),
         )
     with col2:
-        incremental = st.checkbox("Incremental", help="Only fetch new messages since last parse")
+        incremental = st.checkbox(t("parser.incremental_label"), help=t("parser.incremental_help"))
 
     if incremental:
-        st.caption("Will fetch only messages newer than the last parse.")
+        st.caption(t("parser.incremental_caption"))
 
     # Date range
     col1, col2 = st.columns(2)
     with col1:
-        from_date = st.date_input("From date", value=None)
+        from_date = st.date_input(t("parser.from_date_label"), value=None)
     with col2:
-        to_date = st.date_input("To date", value=None)
+        to_date = st.date_input(t("parser.to_date_label"), value=None)
 
     # Options
     col1, col2, col3 = st.columns(3)
     with col1:
-        limit = st.number_input("Message limit (0 = no limit)", min_value=0, value=0, step=100)
+        limit = st.number_input(t("parser.limit_label"), min_value=0, value=0, step=100)
     with col2:
-        export_format = st.selectbox("Export format", ["json", "csv", "xlsx", "all"])
+        export_format = st.selectbox(t("parser.format_label"), ["json", "csv", "xlsx", "all"])
     with col3:
-        output_dir = st.text_input("Output directory", value=str(settings.output_dir))
+        output_dir = st.text_input(t("parser.output_dir_label"), value=str(settings.output_dir))
 
     # Field selection
-    with st.expander("Field selection (select which fields to export)"):
-        select_all = st.checkbox("Select all fields", value=True)
+    with st.expander(t("parser.fields_expander")):
+        select_all = st.checkbox(t("parser.fields_select_all"), value=True)
         if select_all:
             selected_fields = list(ALL_EXPORT_FIELDS)
         else:
@@ -70,20 +80,23 @@ def render():
                         selected_fields.append(field)
 
         if not selected_fields:
-            st.warning("Select at least one field.")
+            st.warning(t("parser.fields_warning"))
 
     # Parse button
     if not channel:
-        st.info("Enter a channel username (@channel) or numeric ID to start parsing.")
+        st.info(t("parser.empty_state_info"))
+        st.caption(t("parser.empty_state_hint"))
 
-    if st.button("Parse", type="primary", disabled=not channel or not selected_fields):
+    if st.button(
+        t("parser.parse_button"), type="primary", disabled=not channel or not selected_fields
+    ):
         fields = selected_fields if not select_all else None
         _do_parse(
             settings,
             channel,
             from_date,
             to_date,
-            limit,
+            int(limit),
             export_format,
             output_dir,
             incremental,
@@ -101,8 +114,22 @@ def render():
 def _do_parse(
     settings, channel, from_date, to_date, limit, export_format, output_dir, incremental, fields
 ):
-    progress_bar = st.progress(0, text="Connecting...")
-    status = st.empty()
+    # Two-path progress: real bar if limit known, counter text if unlimited
+    if limit > 0:
+        progress_bar = st.progress(0, text=t("parser.spinner_connecting"))
+        status = st.empty()
+    else:
+        progress_bar = None
+        status = st.empty()
+        status.info(t("parser.spinner_connecting"))
+
+    def on_progress(count: int) -> None:
+        if limit > 0:
+            pct = min(int(count / limit * 100), 99)
+            progress_bar.progress(pct, text=t("parser.progress_parsed", count=count))
+        else:
+            if count % 10 == 0:
+                status.info(t("parser.progress_parsed", count=count))
 
     try:
         result, output_files = asyncio.run(
@@ -116,17 +143,46 @@ def _do_parse(
                 output_dir,
                 incremental,
                 fields,
-                progress_bar,
+                on_progress,
                 status,
             )
         )
         st.session_state["last_parse_result"] = result.model_dump(mode="json")
         st.session_state["last_output_files"] = output_files
-        progress_bar.progress(100, text="Done!")
-        status.success(f"Parsed {result.total_messages} messages")
+        if progress_bar is not None:
+            progress_bar.progress(100, text=t("parser.progress_done"))
+        status.success(t("parser.success", count=result.total_messages))
     except Exception as e:
-        progress_bar.empty()
-        st.error(f"Parse error: {e}")
+        if progress_bar is not None:
+            progress_bar.empty()
+        status.empty()
+        _show_parse_error(e, channel)
+
+
+def _show_parse_error(e: Exception, channel: str) -> None:
+    """Categorize and display a user-friendly parse error."""
+    # Check for flood wait via class name (avoids direct Telethon import in web layer)
+    cls_name = type(e).__name__
+    err_str = str(e).lower()
+
+    if cls_name == "FloodWaitError":
+        seconds = getattr(e, "seconds", "?")
+        st.error(t("parser.error_flood", seconds=seconds))
+    elif cls_name in ("AuthKeyError", "UserNotParticipantError") or any(
+        kw in err_str for kw in ("not authorized", "unauthorized", "session")
+    ):
+        st.error(t("parser.error_auth"))
+    elif cls_name in (
+        "UsernameInvalidError",
+        "UsernameNotOccupiedError",
+        "ChannelPrivateError",
+        "ChatIdInvalidError",
+    ) or any(kw in err_str for kw in ("no user", "no entity", "not found", "invalid username")):
+        st.error(t("parser.error_not_found", channel=channel))
+    elif any(kw in err_str for kw in ("connection", "timeout", "network", "socket")):
+        st.error(t("parser.error_network"))
+    else:
+        st.error(t("parser.error_generic", error=e))
 
 
 async def _parse_async(
@@ -139,7 +195,7 @@ async def _parse_async(
     output_dir,
     incremental,
     fields,
-    progress_bar,
+    on_progress,
     status,
 ):
     from tg_harvest.client.rate_limiter import RateLimiter
@@ -152,7 +208,6 @@ async def _parse_async(
 
     out_path = Path(output_dir)
 
-    # Convert dates
     fd = (
         datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)
         if from_date
@@ -164,7 +219,6 @@ async def _parse_async(
         else None
     )
 
-    # Resolve channel
     channel_id = int(channel) if channel.lstrip("-").isdigit() else channel
 
     state = StateManager(settings.state_path)
@@ -180,14 +234,7 @@ async def _parse_async(
             if last_id:
                 min_id = last_id
 
-        status.info("Parsing messages...")
-
-        msg_count = [0]
-
-        def on_progress(count):
-            msg_count[0] = count
-            if count % 10 == 0:
-                progress_bar.progress(min(count % 100, 99), text=f"Parsed {count} messages...")
+        status.info(t("parser.spinner_parsing"))
 
         result = await parser.parse(
             channel=channel_id,
@@ -198,12 +245,10 @@ async def _parse_async(
             on_progress=on_progress,
         )
 
-        # Update state
         if result.messages:
             max_msg_id = max(m.id for m in result.messages)
             state.set_last_id(result.channel.id, max_msg_id)
 
-        # Export
         output_files = []
         if export_format in ("json", "all"):
             path = await JsonExporter(fields).export(result, out_path)
@@ -219,7 +264,6 @@ async def _parse_async(
 
 
 def _format_size(path: str) -> str:
-    """Format file size for display."""
     try:
         size = os.path.getsize(path)
         if size < 1024:
@@ -231,52 +275,71 @@ def _format_size(path: str) -> str:
 
 def _show_result(result_data: dict, output_files: list[str]):
     st.divider()
-    st.subheader(f"Results: {result_data['channel']['title']}")
+    st.subheader(t("parser.results_subheader", title=result_data["channel"]["title"]))
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Messages", result_data["total_messages"])
-    col2.metric("Channel ID", result_data["channel"]["id"])
+    col1.metric(t("parser.metric_messages"), result_data["total_messages"])
+    col2.metric(t("parser.metric_channel_id"), result_data["channel"]["id"])
 
     username = result_data["channel"].get("username")
-    col3.metric("Username", f"@{username}" if username else "private")
-    col4.metric("Members", result_data["channel"].get("members_count") or "N/A")
+    col3.metric(t("parser.metric_username"), f"@{username}" if username else t("parser.col_id"))
+    col4.metric(t("parser.metric_members"), result_data["channel"].get("members_count") or "N/A")
 
-    # Messages table
     if result_data["messages"]:
         rows = []
         for msg in result_data["messages"]:
             rows.append(
                 {
-                    "ID": msg["id"],
-                    "Date": msg.get("date", ""),
-                    "Text": (msg["text"][:100] + "...")
-                    if len(msg.get("text", "")) > 100
-                    else msg.get("text", ""),
-                    "Views": msg.get("views") or 0,
-                    "Forwards": msg.get("forwards") or 0,
-                    "Reactions": msg.get("reactions", {}).get("total", 0)
+                    t("parser.col_id"): msg["id"],
+                    t("parser.col_date"): msg.get("date", ""),
+                    t("parser.col_text"): _truncate(msg.get("text")),
+                    t("parser.col_views"): msg.get("views") or 0,
+                    t("parser.col_forwards"): msg.get("forwards") or 0,
+                    t("parser.col_reactions"): msg.get("reactions", {}).get("total", 0)
                     if msg.get("reactions")
                     else 0,
-                    "Media": msg.get("media", {}).get("type", "") if msg.get("media") else "",
-                    "Pinned": msg.get("is_pinned", False),
+                    t("parser.col_media"): msg.get("media", {}).get("type", "")
+                    if msg.get("media")
+                    else "",
+                    t("parser.col_pinned"): msg.get("is_pinned", False),
                 }
             )
 
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+        st.dataframe(
+            rows,
+            column_config={
+                t("parser.col_id"): st.column_config.NumberColumn(t("parser.col_id"), format="%d"),
+                t("parser.col_date"): t("parser.col_date"),
+                t("parser.col_text"): st.column_config.TextColumn(
+                    t("parser.col_text"), width="large"
+                ),
+                t("parser.col_views"): st.column_config.NumberColumn(
+                    t("parser.col_views"), format="%d"
+                ),
+                t("parser.col_forwards"): st.column_config.NumberColumn(
+                    t("parser.col_forwards"), format="%d"
+                ),
+                t("parser.col_reactions"): st.column_config.NumberColumn(
+                    t("parser.col_reactions"), format="%d"
+                ),
+                t("parser.col_media"): t("parser.col_media"),
+                t("parser.col_pinned"): st.column_config.CheckboxColumn(t("parser.col_pinned")),
+            },
+            use_container_width=True,
+            hide_index=True,
+        )
 
-    # Exported files with sizes
     if output_files:
-        st.markdown("**Exported files:**")
+        st.markdown(t("parser.exported_files_label"))
         for f in output_files:
             size = _format_size(f)
             st.code(f"{f}  ({size})" if size else f)
 
-    # Download buttons
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.download_button(
-            "Download JSON",
+            t("parser.download_json"),
             data=json.dumps(result_data, ensure_ascii=False, indent=2, default=str),
             file_name=(
                 f"{result_data['channel'].get('username', result_data['channel']['id'])}.json"
@@ -287,7 +350,7 @@ def _show_result(result_data: dict, output_files: list[str]):
     with col2:
         csv_data = _build_csv(result_data)
         st.download_button(
-            "Download CSV",
+            t("parser.download_csv"),
             data=csv_data,
             file_name=(
                 f"{result_data['channel'].get('username', result_data['channel']['id'])}.csv"
@@ -299,7 +362,7 @@ def _show_result(result_data: dict, output_files: list[str]):
         xlsx_data = _build_xlsx(result_data)
         if xlsx_data:
             st.download_button(
-                "Download XLSX",
+                t("parser.download_xlsx"),
                 data=xlsx_data,
                 file_name=(
                     f"{result_data['channel'].get('username', result_data['channel']['id'])}.xlsx"
@@ -309,7 +372,6 @@ def _show_result(result_data: dict, output_files: list[str]):
 
 
 def _build_csv(result_data: dict) -> str:
-    """Build CSV string from result data for download."""
     from tg_harvest.models.message import ParsedMessage
 
     output = io.StringIO()
@@ -329,7 +391,6 @@ def _build_csv(result_data: dict) -> str:
 
 
 def _build_xlsx(result_data: dict) -> bytes | None:
-    """Build XLSX bytes from result data for download."""
     try:
         from openpyxl import Workbook
 

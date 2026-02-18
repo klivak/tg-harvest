@@ -5,11 +5,12 @@ import asyncio
 import streamlit as st
 
 from tg_harvest.config import Settings
+from tg_harvest.web.i18n import t
 
 
 def render():
-    st.header("Channels & Groups")
-    st.caption("Step 2 — browse your accessible channels")
+    st.header(t("channels.header"))
+    st.caption(t("channels.caption"))
 
     try:
         settings = Settings()
@@ -17,64 +18,83 @@ def render():
         st.error(f"Settings error: {e}")
         return
 
-    limit = st.sidebar.slider("Max dialogs to scan", 10, 500, 100)
+    with st.expander(t("channels.tips_expander"), expanded=False):
+        st.markdown(t("channels.tips_body"))
 
-    if st.button("Load channels", type="primary"):
-        with st.spinner("Fetching channels..."):
+    limit = st.sidebar.slider(t("channels.sidebar_slider"), 10, 500, 100)
+
+    if st.button(t("channels.load_button"), type="primary"):
+        with st.spinner(t("channels.spinner_fetching")):
             try:
-                channels = asyncio.run(_fetch_channels(settings, limit))
+                channels = _fetch_channels_cached(
+                    settings.api_id or 0, settings.session_name, limit
+                )
                 st.session_state["channels"] = channels
             except Exception as e:
                 err = str(e).lower()
                 if "auth" in err or "not authorized" in err or "session" in err:
-                    st.error("Not authorized. Go to **Auth Status** and log in first.")
+                    st.error(t("channels.error_auth"))
                 else:
-                    st.error(f"Failed to fetch channels: {e}")
+                    st.error(t("channels.error_fetch", error=e))
                 return
 
     if "channels" not in st.session_state:
-        st.info("Click **Load channels** to see your accessible channels and groups.")
+        st.info(t("channels.empty_state_info"))
+        st.caption(t("channels.empty_go_parse_hint"))
         return
 
     channels = st.session_state["channels"]
     if not channels:
-        st.warning("No channels or groups found.")
+        st.warning(t("channels.no_channels_warning"))
         return
 
     total = len(channels)
-    search = st.text_input("Filter channels", placeholder="Type to filter...")
+    search = st.text_input(t("channels.filter_label"), placeholder=t("channels.filter_placeholder"))
     if search:
         channels = [
             c
             for c in channels
-            if search.lower() in c["title"].lower()
-            or (c["username"] and search.lower() in c["username"].lower())
+            if search.lower() in c[t("channels.col_title")].lower()
+            or (
+                c[t("channels.col_username")]
+                and search.lower() in c[t("channels.col_username")].lower()
+            )
         ]
 
     st.dataframe(
         channels,
         column_config={
-            "id": st.column_config.NumberColumn("ID", format="%d"),
-            "title": "Title",
-            "username": "Username",
-            "type": "Type",
-            "members": st.column_config.NumberColumn("Members", format="%d"),
-            "restricted": "Restricted",
+            t("channels.col_id"): st.column_config.NumberColumn(t("channels.col_id"), format="%d"),
+            t("channels.col_title"): t("channels.col_title"),
+            t("channels.col_username"): t("channels.col_username"),
+            t("channels.col_type"): t("channels.col_type"),
+            t("channels.col_members"): st.column_config.NumberColumn(
+                t("channels.col_members"), format="%d"
+            ),
+            t("channels.col_restricted"): t("channels.col_restricted"),
         },
         use_container_width=True,
         hide_index=True,
     )
 
     if search:
-        st.caption(f"Showing {len(channels)} of {total} channels/groups")
+        st.caption(t("channels.caption_filtered", count=len(channels), total=total))
     else:
-        st.caption(f"Total: {total} channels/groups")
+        st.caption(t("channels.caption_total", total=total))
+
+
+@st.cache_data(ttl=300)
+def _fetch_channels_cached(api_id: int, session_name: str, limit: int) -> list[dict]:
+    """Cache-safe synchronous wrapper around async channel fetch."""
+    settings = Settings()
+    return asyncio.run(_fetch_channels(settings, limit))
 
 
 async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
     from tg_harvest.client.rate_limiter import RateLimiter
     from tg_harvest.client.session import TelegramSession
     from tg_harvest.parsers.channel_parser import ChannelParser
+    from tg_harvest.web.i18n import t as _t
 
     async with TelegramSession(settings) as session:
         rate_limiter = RateLimiter(delay=settings.request_delay)
@@ -83,12 +103,14 @@ async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
 
     return [
         {
-            "id": ch.id,
-            "title": ch.title,
-            "username": ch.username or "",
-            "type": "Group" if ch.is_group else "Channel",
-            "members": ch.members_count or 0,
-            "restricted": "Yes" if ch.restricted else "",
+            _t("channels.col_id"): ch.id,
+            _t("channels.col_title"): ch.title,
+            _t("channels.col_username"): ch.username or "",
+            _t("channels.col_type"): _t("channels.type_group")
+            if ch.is_group
+            else _t("channels.type_channel"),
+            _t("channels.col_members"): ch.members_count or 0,
+            _t("channels.col_restricted"): "✓" if ch.restricted else "",
         }
         for ch in channel_list
     ]

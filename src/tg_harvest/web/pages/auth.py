@@ -5,6 +5,7 @@ import asyncio
 import streamlit as st
 
 from tg_harvest.config import Settings
+from tg_harvest.web.i18n import t
 
 
 def _mask_phone(phone: str) -> str:
@@ -15,17 +16,31 @@ def _mask_phone(phone: str) -> str:
 
 
 def render():
-    st.header("Authentication Status")
-    st.caption("Step 1 — verify your Telegram session before parsing")
+    st.header(t("auth.header"))
+    st.caption(t("auth.caption"))
 
-    try:
-        settings = Settings()
-    except Exception as e:
-        st.error(f"Failed to load settings: {e}")
-        st.info(
-            "1. Create a `.env` file with `TG_API_ID`, `TG_API_HASH`, `TG_PHONE`\n"
-            "2. Run `tg-harvest auth login` in terminal"
+    with st.expander(t("auth.help_expander"), expanded=False):
+        st.markdown(t("auth.help_step1_header"))
+        st.markdown(t("auth.help_step1_body"))
+        st.markdown(t("auth.help_step2_header"))
+        st.markdown(t("auth.help_step2_body"))
+        st.code(
+            "TG_API_ID=12345678\n"
+            "TG_API_HASH=abcdef1234567890abcdef1234567890\n"
+            "TG_PHONE=+380501234567",
+            language="dotenv",
         )
+        st.markdown(t("auth.help_step3_header"))
+        st.markdown(t("auth.help_step3_body"))
+        st.code("tg-harvest auth login", language="bash")
+        st.markdown(t("auth.help_private_header"))
+        st.markdown(t("auth.help_private_body"))
+
+    settings = Settings()
+
+    if not settings.api_id or not settings.api_hash or not settings.phone:
+        st.warning(t("auth.no_credentials_warning"))
+        st.info(t("auth.no_credentials_info"))
         return
 
     session_file = settings.session_path.with_suffix(".session")
@@ -49,36 +64,33 @@ def render():
                 finally:
                     await session.disconnect()
 
-            with st.spinner("Verifying session..."):
+            with st.spinner(t("auth.spinner_verifying")):
                 info = asyncio.run(check())
 
             if info:
-                st.success(f"Authenticated as **{info['name']}**")
+                st.success(t("auth.success", name=info["name"]))
                 col1, col2 = st.columns(2)
-                col1.metric("Name", info["name"])
-                col2.metric("ID", info["id"])
-                col1.metric("Username", info["username"])
-                col2.metric("Phone", info["phone"])
+                col1.metric(t("auth.metric_name"), info["name"])
+                col2.metric(t("auth.metric_id"), info["id"])
+                col1.metric(t("auth.metric_username"), info["username"])
+                col2.metric(t("auth.metric_phone"), info["phone"])
             else:
-                st.warning("Session file exists but is not authorized.")
-                st.info("Re-run login to authenticate:")
+                st.warning(t("auth.session_not_authorized"))
+                st.info(t("auth.session_relogin_info"))
                 st.code("tg-harvest auth login", language="bash")
         except Exception as e:
-            st.error(f"Could not connect to Telegram: {e}")
-            st.info("Check your internet connection and try again.")
+            st.error(t("auth.connect_error", error=e))
+            st.info(t("auth.connect_error_info"))
     else:
-        st.info("No session found. To authenticate:")
-        st.markdown(
-            "1. Make sure `.env` file exists with your API credentials\n"
-            "2. Run the login command in terminal:"
-        )
+        st.info(t("auth.no_session_info"))
+        st.markdown(t("auth.no_session_steps"))
         st.code("tg-harvest auth login", language="bash")
 
-    with st.expander("Configuration"):
+    with st.expander(t("auth.config_expander")):
         st.json(
             {
                 "api_id": settings.api_id,
-                "phone": _mask_phone(settings.phone),
+                "phone": _mask_phone(settings.phone) if settings.phone else "N/A",
                 "session_name": settings.session_name,
                 "output_dir": str(settings.output_dir),
                 "flood_sleep_threshold": settings.flood_sleep_threshold,
