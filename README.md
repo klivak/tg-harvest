@@ -14,12 +14,23 @@ cd telegram-api-parser
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .
 cp .env.example .env          # fill in TG_API_ID, TG_API_HASH, TG_PHONE
-tg-harvest auth login         # authenticate once
-tg-harvest channels list      # see your channels
-tg-harvest parse @channel     # parse a public channel
-tg-harvest parse -1001234567890  # parse a private channel by ID
-tg-harvest web                # open web UI at http://localhost:8777
+tg-harvest auth login         # one-time login: enter the code sent to your Telegram app
 ```
+
+After login the session is saved locally. Everything else can be done via the **web UI** or CLI:
+
+```bash
+# Web UI — recommended (all features in one place)
+tg-harvest web                # opens at http://localhost:8777
+
+# Or use the CLI directly
+tg-harvest channels list      # list your channels and get their IDs
+tg-harvest parse @channel     # parse a public channel
+tg-harvest parse -1001234567890  # parse a private channel by numeric ID
+tg-harvest search "keyword"   # search parsed data
+```
+
+> **Note:** `tg-harvest auth login` must be run once in the terminal — it requires entering a confirmation code sent to your Telegram app. After that, the session is saved and the web UI works without any further terminal interaction.
 
 ---
 
@@ -369,12 +380,23 @@ cd telegram-api-parser
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .
 cp .env.example .env          # вписати TG_API_ID, TG_API_HASH, TG_PHONE
-tg-harvest auth login         # авторизуватись один раз
-tg-harvest channels list      # переглянути канали
-tg-harvest parse @channel     # парсити публічний канал
-tg-harvest parse -1001234567890  # парсити приватний канал за ID
-tg-harvest web                # відкрити веб-інтерфейс на http://localhost:8777
+tg-harvest auth login         # одноразовий вхід: введіть код з вашого Telegram
 ```
+
+Після входу сесія зберігається локально. Все інше можна робити через **веб-інтерфейс** або CLI:
+
+```bash
+# Веб-інтерфейс — рекомендовано (всі функції в одному місці)
+tg-harvest web                # відкривається на http://localhost:8777
+
+# Або через CLI напряму
+tg-harvest channels list      # список каналів та їхні ID
+tg-harvest parse @channel     # парсити публічний канал
+tg-harvest parse -1001234567890  # парсити приватний канал за числовим ID
+tg-harvest search "ключове слово"  # пошук по розпарсених даних
+```
+
+> **Важливо:** `tg-harvest auth login` потрібно запустити один раз у терміналі — програма надішле код підтвердження у ваш Telegram-додаток, який треба ввести. Після цього сесія зберігається і веб-інтерфейс працює без будь-яких додаткових дій у терміналі.
 
 Витягує повідомлення, метадані медіа, реакції, перегляди, репости з будь-якого каналу, учасником якого ви є — включно з каналами з вимкненим копіюванням.
 
