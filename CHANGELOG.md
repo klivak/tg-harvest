@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-02-18
+
+### Added
+
+- **Internationalization (i18n)**: language switcher in sidebar (English / Українська)
+  - All UI strings translated — pages, tips, error messages, column names, chart labels
+  - Locale files: `src/tg_harvest/web/locales/en.json`, `uk.json` (131 keys each)
+  - `src/tg_harvest/web/i18n.py` — `t(key, **kwargs)` helper with EN fallback
+- **Help guides** on every web page (collapsible expanders):
+  - Auth: step-by-step instructions to get API ID/Hash from my.telegram.org, create `.env`, log in, access private/restricted channels
+  - Channels: tips on finding private channel IDs, restricted flag meaning
+  - Parse: channel format examples, options explained, private channel notes
+  - Search: filter usage, empty-query browse mode
+  - Analytics: metric explanations, UTC note, incremental tracking tip
+
+### Changed
+
+- **Web — Parse page**: fixed broken progress bar (`min(count % 100, 99)` loop);
+  now shows real 0–100% when limit is set, or a message counter when limit = 0
+- **Web — Parse page**: categorized error messages (flood wait, auth, channel not
+  found, network) instead of a generic `st.error(f"Parse error: {e}")`
+- **Web — Channels page**: added `@st.cache_data(ttl=300)` — no refetch on rerun
+- **Web — Search page**: added `@st.cache_data(ttl=60)` on result loading;
+  configurable result limit via sidebar slider (50–500, default 200);
+  fixed channel dedup bug (now deduplicates by channel ID, not title)
+- **Web — Analytics page**: added `@st.cache_data(ttl=60)`; fixed metric layout
+  from 4+2 split to clean 3+3 grid
+- **Web — All pages**: consistent text truncation at 100 chars; `column_config`
+  with proper types on all dataframes
+- **Config**: API credentials (`TG_API_ID`, `TG_API_HASH`, `TG_PHONE`) are now
+  optional in `Settings` (default `None`); empty strings converted to `None`
+- **Client**: `TelegramSession` now raises `ValueError` with a clear message if
+  credentials are missing, instead of a cryptic Telethon error
+- **Web — Auth page**: shows actionable warning when credentials are missing
+  instead of crashing; `None`-safe config display
+
 ## [0.4.0] - 2026-02-16
 
 ### Changed
