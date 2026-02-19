@@ -24,23 +24,75 @@ def main():
             "true",
             "--browser.gatherUsageStats",
             "false",
+            "--theme.primaryColor",
+            "#0088cc",
+            "--theme.backgroundColor",
+            "#ffffff",
+            "--theme.secondaryBackgroundColor",
+            "#f0f2f6",
+            "--theme.textColor",
+            "#262730",
         ],
         check=True,
     )
 
 
+def _show_sidebar_status():
+    """Show auth + data status indicators in sidebar."""
+    from tg_harvest.config import Settings
+    from tg_harvest.web.i18n import t
+
+    try:
+        settings = Settings()
+    except Exception:
+        return
+
+    session_file = settings.session_path.with_suffix(".session")
+    if session_file.exists():
+        st.sidebar.markdown(
+            f'<div class="sidebar-status status-ok">'
+            f"\u2705 {t('sidebar.status_authenticated')}</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.sidebar.markdown(
+            f'<div class="sidebar-status status-error">'
+            f"\u274c {t('sidebar.status_not_authenticated')}</div>",
+            unsafe_allow_html=True,
+        )
+
+    output_dir = settings.output_dir
+    json_count = len(list(output_dir.glob("*.json"))) if output_dir.exists() else 0
+    if json_count > 0:
+        st.sidebar.markdown(
+            f'<div class="sidebar-status status-ok">'
+            f"\U0001f4c4 {t('sidebar.status_data_count', count=json_count)}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.sidebar.markdown(
+            f'<div class="sidebar-status status-warn">'
+            f"\U0001f4c4 {t('sidebar.status_no_data')}</div>",
+            unsafe_allow_html=True,
+        )
+
+
 if __name__ == "__main__" or st.runtime.exists():
     st.set_page_config(
         page_title="TG Harvest",
-        page_icon="📡",
+        page_icon="\U0001f4e1",
         layout="wide",
         initial_sidebar_state="expanded",
     )
 
     from tg_harvest import __version__
     from tg_harvest.web.i18n import LANGUAGES, t
+    from tg_harvest.web.theme import apply_custom_css
 
-    # Language selector — must be first so all subsequent t() calls use the correct lang
+    apply_custom_css()
+
+    # Language selector — must be first so all subsequent t() calls use correct lang
     lang_label = st.sidebar.selectbox(
         t("app.lang_selector_label"),
         list(LANGUAGES.keys()),
@@ -50,18 +102,31 @@ if __name__ == "__main__" or st.runtime.exists():
 
     st.sidebar.title("TG Harvest")
 
+    # Build page list
+    nav_pages = [
+        t("app.page_auth"),
+        t("app.page_channels"),
+        t("app.page_parse"),
+        t("app.page_search"),
+        t("app.page_analytics"),
+    ]
+
+    # Support programmatic navigation from other pages
+    nav_key = "nav_radio"
+    if "nav_page" in st.session_state:
+        st.session_state[nav_key] = st.session_state.pop("nav_page")
+
     page = st.sidebar.radio(
         t("app.nav_label"),
-        [
-            t("app.page_auth"),
-            t("app.page_channels"),
-            t("app.page_parse"),
-            t("app.page_search"),
-            t("app.page_analytics"),
-        ],
+        nav_pages,
+        key=nav_key,
         label_visibility="collapsed",
     )
+
+    # Sidebar status indicators
     st.sidebar.divider()
+    _show_sidebar_status()
+
     st.sidebar.caption(t("app.workflow_caption"))
     st.sidebar.caption(f"v{__version__}")
 

@@ -30,6 +30,7 @@ def render():
                     settings.api_id or 0, settings.session_name, limit
                 )
                 st.session_state["channels"] = channels
+                st.toast(t("channels.toast_loaded", count=len(channels)), icon="\U0001f4cb")
             except Exception as e:
                 err = str(e).lower()
                 if "auth" in err or "not authorized" in err or "session" in err:
@@ -72,6 +73,7 @@ def render():
                 t("channels.col_members"), format="%d"
             ),
             t("channels.col_restricted"): t("channels.col_restricted"),
+            t("channels.col_private"): t("channels.col_private"),
         },
         use_container_width=True,
         hide_index=True,
@@ -81,6 +83,38 @@ def render():
         st.caption(t("channels.caption_filtered", count=len(channels), total=total))
     else:
         st.caption(t("channels.caption_total", total=total))
+
+    # --- Quick Actions: select channel and go to Parse ---
+    st.divider()
+    st.subheader(t("channels.actions_subheader"))
+
+    channel_options: dict[str, str] = {}
+    for c in channels:
+        ch_title = c[t("channels.col_title")]
+        ch_username = c[t("channels.col_username")]
+        ch_id = c[t("channels.col_id")]
+        if ch_username:
+            label = f"{ch_title} (@{ch_username})"
+            value = f"@{ch_username}"
+        else:
+            label = f"{ch_title} (ID: {ch_id})"
+            value = str(ch_id)
+        channel_options[label] = value
+
+    selected = st.selectbox(
+        t("channels.select_to_parse_label"),
+        list(channel_options.keys()),
+        key="channel_to_parse_select",
+    )
+
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        if st.button(t("channels.parse_button"), type="primary"):
+            st.session_state["prefill_channel"] = channel_options[selected]
+            st.session_state["nav_page"] = t("app.page_parse")
+            st.rerun()
+    with col2:
+        st.code(channel_options[selected], language=None)
 
 
 @st.cache_data(ttl=300)
@@ -110,7 +144,8 @@ async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
             if ch.is_group
             else _t("channels.type_channel"),
             _t("channels.col_members"): ch.members_count or 0,
-            _t("channels.col_restricted"): "✓" if ch.restricted else "",
+            _t("channels.col_restricted"): "\U0001f512" if ch.restricted else "",
+            _t("channels.col_private"): "\U0001f510" if not ch.username else "",
         }
         for ch in channel_list
     ]

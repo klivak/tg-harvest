@@ -1,20 +1,19 @@
 """Analytics page with charts."""
 
+import csv
+import io
 from pathlib import Path
 
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 from tg_harvest.analytics.stats import ChannelStats
 from tg_harvest.config import Settings
 from tg_harvest.search.engine import SearchEngine
+from tg_harvest.web.helpers import truncate
 from tg_harvest.web.i18n import t
-
-
-def _truncate(text: str | None, limit: int = 100) -> str:
-    if not text:
-        return ""
-    return (text[:limit] + "...") if len(text) > limit else text
+from tg_harvest.web.theme import CHART_COLORS, CHART_LAYOUT
 
 
 def render():
@@ -27,6 +26,13 @@ def render():
         st.error(f"Settings error: {e}")
         return
 
+    # Header with refresh button
+    col_header, col_refresh = st.columns([6, 1])
+    with col_refresh:
+        if st.button("\U0001f504", help=t("analytics.refresh_help"), key="analytics_refresh"):
+            _load_results_cached.clear()
+            st.rerun()
+
     results = _load_results_cached(str(settings.output_dir))
 
     if not results:
@@ -36,14 +42,26 @@ def render():
     with st.expander(t("analytics.tips_expander"), expanded=False):
         st.markdown(t("analytics.tips_body"))
 
-    # Select dataset
-    options = {}
+    # Build options map
+    options: dict[str, object] = {}
     for r in results:
         label = (
             f"{r.channel.title} ({r.total_messages} msgs, {r.parsed_at.strftime('%Y-%m-%d %H:%M')})"
         )
         options[label] = r
 
+    # Tabs: single channel / compare
+    tab_single, tab_compare = st.tabs([t("analytics.tab_single"), t("analytics.tab_compare")])
+
+    with tab_single:
+        _render_single(options)
+
+    with tab_compare:
+        _render_compare(options)
+
+
+def _render_single(options: dict):
+    """Render single-channel analytics."""
     selected = st.selectbox(t("analytics.dataset_label"), list(options.keys()))
     result = options[selected]
     stats = ChannelStats(result)
@@ -72,9 +90,17 @@ def render():
             x=list(per_day.keys()),
             y=list(per_day.values()),
             labels={"x": t("analytics.per_day_x"), "y": t("analytics.per_day_y")},
+            color_discrete_sequence=CHART_COLORS,
         )
-        fig.update_layout(height=350, margin=dict(t=10, b=40))
+        fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
+        _download_chart_csv(
+            per_day,
+            t("analytics.per_day_x"),
+            t("analytics.per_day_y"),
+            "messages_per_day.csv",
+            "dl_per_day",
+        )
 
     # Activity by hour
     st.subheader(t("analytics.by_hour_subheader"))
@@ -83,8 +109,9 @@ def render():
         x=list(by_hour.keys()),
         y=list(by_hour.values()),
         labels={"x": t("analytics.by_hour_x"), "y": t("analytics.by_hour_y")},
+        color_discrete_sequence=CHART_COLORS,
     )
-    fig.update_layout(height=300, margin=dict(t=10, b=40))
+    fig.update_layout(height=300, margin=dict(t=10, b=40), **CHART_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
     st.caption(t("analytics.by_hour_caption"))
 
@@ -99,7 +126,7 @@ def render():
                 {
                     t("analytics.col_id"): m.id,
                     t("analytics.col_views"): m.views,
-                    t("analytics.col_text"): _truncate(m.text),
+                    t("analytics.col_text"): truncate(m.text),
                     t("analytics.col_date"): m.date.strftime("%Y-%m-%d"),
                 }
                 for m in top_views
@@ -132,7 +159,7 @@ def render():
                 {
                     t("analytics.col_id"): m.id,
                     t("analytics.col_reactions"): m.reactions.total,
-                    t("analytics.col_text"): _truncate(m.text),
+                    t("analytics.col_text"): truncate(m.text),
                     t("analytics.col_date"): m.date.strftime("%Y-%m-%d"),
                 }
                 for m in top_reactions
@@ -166,8 +193,9 @@ def render():
             fig = px.pie(
                 names=list(media_dist.keys()),
                 values=list(media_dist.values()),
+                color_discrete_sequence=CHART_COLORS,
             )
-            fig.update_layout(height=350, margin=dict(t=10, b=10))
+            fig.update_layout(height=350, margin=dict(t=10, b=10), **CHART_LAYOUT)
             st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -182,11 +210,99 @@ def render():
                     "x": t("analytics.reactions_breakdown_x"),
                     "y": t("analytics.reactions_breakdown_y"),
                 },
+                color_discrete_sequence=CHART_COLORS,
             )
-            fig.update_layout(height=350, margin=dict(t=10, b=40))
+            fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info(t("analytics.reactions_breakdown_empty"))
+
+
+def _render_compare(options: dict):
+    """Render channel comparison view."""
+    if len(options) < 2:
+        st.info(t("analytics.compare_hint"))
+        return
+
+    selected_datasets = st.multiselect(
+        t("analytics.compare_select_label"),
+        list(options.keys()),
+        max_selections=5,
+    )
+
+    if len(selected_datasets) < 2:
+        st.info(t("analytics.compare_hint"))
+        return
+
+    # Comparison metrics table
+    comparison_rows = []
+    for label in selected_datasets:
+        r = options[label]
+        s = ChannelStats(r)
+        comparison_rows.append(
+            {
+                t("analytics.col_channel"): r.channel.title,
+                t("analytics.metric_total"): s.total,
+                t("analytics.metric_avg_views"): f"{s.avg_views():,.0f}",
+                t("analytics.metric_avg_reactions"): f"{s.avg_reactions():,.1f}",
+                t("analytics.metric_forwarded"): s.forwarded_count(),
+                t("analytics.metric_edited"): s.edited_count(),
+            }
+        )
+    st.dataframe(comparison_rows, use_container_width=True, hide_index=True)
+
+    # Overlay messages per day
+    st.subheader(t("analytics.per_day_subheader"))
+    fig = go.Figure()
+    for i, label in enumerate(selected_datasets):
+        r = options[label]
+        s = ChannelStats(r)
+        per_day = s.messages_per_day()
+        fig.add_trace(
+            go.Bar(
+                x=list(per_day.keys()),
+                y=list(per_day.values()),
+                name=r.channel.title,
+                marker_color=CHART_COLORS[i % len(CHART_COLORS)],
+            )
+        )
+    fig.update_layout(barmode="group", height=400, **CHART_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Overlay activity by hour
+    st.subheader(t("analytics.by_hour_subheader"))
+    fig = go.Figure()
+    for i, label in enumerate(selected_datasets):
+        r = options[label]
+        s = ChannelStats(r)
+        by_hour = s.activity_by_hour()
+        fig.add_trace(
+            go.Bar(
+                x=list(by_hour.keys()),
+                y=list(by_hour.values()),
+                name=r.channel.title,
+                marker_color=CHART_COLORS[i % len(CHART_COLORS)],
+            )
+        )
+    fig.update_layout(barmode="group", height=350, **CHART_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption(t("analytics.by_hour_caption"))
+
+
+def _download_chart_csv(data: dict, x_label: str, y_label: str, filename: str, key: str):
+    """Render a download button for chart data as CSV."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([x_label, y_label])
+    for k, v in data.items():
+        writer.writerow([k, v])
+    st.download_button(
+        t("analytics.download_chart_data"),
+        data=buf.getvalue(),
+        file_name=filename,
+        mime="text/csv",
+        key=key,
+    )
 
 
 @st.cache_data(ttl=60)

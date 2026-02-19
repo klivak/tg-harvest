@@ -9,13 +9,8 @@ import streamlit as st
 from tg_harvest.config import Settings
 from tg_harvest.models.media import MediaType
 from tg_harvest.search.engine import SearchEngine, SearchFilters
+from tg_harvest.web.helpers import truncate
 from tg_harvest.web.i18n import t
-
-
-def _truncate(text: str | None, limit: int = 100) -> str:
-    if not text:
-        return ""
-    return (text[:limit] + "...") if len(text) > limit else text
 
 
 def render():
@@ -35,7 +30,15 @@ def render():
         return
 
     total_msgs = sum(r.total_messages for r in results)
-    st.caption(t("search.scope_caption", files=len(results), messages=total_msgs))
+
+    # Scope caption with refresh button
+    col_scope, col_refresh = st.columns([6, 1])
+    with col_scope:
+        st.caption(t("search.scope_caption", files=len(results), messages=total_msgs))
+    with col_refresh:
+        if st.button("\U0001f504", help=t("search.refresh_help"), key="search_refresh"):
+            _load_results_cached.clear()
+            st.rerun()
 
     with st.expander(t("search.tips_expander"), expanded=False):
         st.markdown(t("search.tips_body"))
@@ -106,7 +109,7 @@ def render():
                 t("search.col_channel"): match.channel_username or match.channel_title,
                 t("search.col_date"): msg.date.strftime("%Y-%m-%d %H:%M"),
                 t("search.col_id"): msg.id,
-                t("search.col_text"): _truncate(msg.text),
+                t("search.col_text"): truncate(msg.text),
                 t("search.col_views"): msg.views or 0,
                 t("search.col_reactions"): msg.reactions.total if msg.reactions else 0,
                 t("search.col_media"): msg.media.type if msg.media else "",
@@ -171,7 +174,7 @@ def _build_search_csv(matches: list) -> str:
                 t("search.col_channel"): match.channel_username or match.channel_title,
                 t("search.col_date"): msg.date.strftime("%Y-%m-%d %H:%M"),
                 t("search.col_id"): msg.id,
-                t("search.col_text"): _truncate(msg.text, 500),
+                t("search.col_text"): truncate(msg.text, 500),
                 t("search.col_views"): msg.views or 0,
                 t("search.col_reactions"): msg.reactions.total if msg.reactions else 0,
                 t("search.col_media"): msg.media.type if msg.media else "",

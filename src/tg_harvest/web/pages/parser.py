@@ -13,13 +13,8 @@ import streamlit as st
 from tg_harvest.config import Settings
 from tg_harvest.config.constants import ALL_EXPORT_FIELDS
 from tg_harvest.exporters.base import build_row, filter_fields
+from tg_harvest.web.helpers import truncate
 from tg_harvest.web.i18n import t
-
-
-def _truncate(text: str | None, limit: int = 100) -> str:
-    if not text:
-        return ""
-    return (text[:limit] + "...") if len(text) > limit else text
 
 
 def render():
@@ -35,37 +30,37 @@ def render():
     with st.expander(t("parser.tips_expander"), expanded=False):
         st.markdown(t("parser.tips_body"))
 
-    # Channel input
-    col1, col2 = st.columns([3, 1])
+    # Channel input — supports prefill from Channels page
+    prefill = st.session_state.pop("prefill_channel", "")
+    channel = st.text_input(
+        t("parser.channel_label"),
+        value=prefill,
+        placeholder=t("parser.channel_placeholder"),
+    )
+
+    # Quick options on one line
+    col1, col2, col3 = st.columns(3)
     with col1:
-        channel = st.text_input(
-            t("parser.channel_label"),
-            placeholder=t("parser.channel_placeholder"),
-        )
+        export_format = st.selectbox(t("parser.format_label"), ["json", "csv", "xlsx", "all"])
     with col2:
         incremental = st.checkbox(t("parser.incremental_label"), help=t("parser.incremental_help"))
+    with col3:
+        limit = st.number_input(t("parser.limit_label"), min_value=0, value=0, step=100)
 
     if incremental:
         st.caption(t("parser.incremental_caption"))
 
-    # Date range
-    col1, col2 = st.columns(2)
-    with col1:
-        from_date = st.date_input(t("parser.from_date_label"), value=None)
-    with col2:
-        to_date = st.date_input(t("parser.to_date_label"), value=None)
+    # Advanced options in expander
+    with st.expander(t("parser.advanced_expander"), expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            from_date = st.date_input(t("parser.from_date_label"), value=None)
+        with col2:
+            to_date = st.date_input(t("parser.to_date_label"), value=None)
 
-    # Options
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        limit = st.number_input(t("parser.limit_label"), min_value=0, value=0, step=100)
-    with col2:
-        export_format = st.selectbox(t("parser.format_label"), ["json", "csv", "xlsx", "all"])
-    with col3:
         output_dir = st.text_input(t("parser.output_dir_label"), value=str(settings.output_dir))
 
-    # Field selection
-    with st.expander(t("parser.fields_expander")):
+        # Field selection
         select_all = st.checkbox(t("parser.fields_select_all"), value=True)
         if select_all:
             selected_fields = list(ALL_EXPORT_FIELDS)
@@ -88,7 +83,10 @@ def render():
         st.caption(t("parser.empty_state_hint"))
 
     if st.button(
-        t("parser.parse_button"), type="primary", disabled=not channel or not selected_fields
+        t("parser.parse_button"),
+        type="primary",
+        disabled=not channel or not selected_fields,
+        use_container_width=True,
     ):
         fields = selected_fields if not select_all else None
         _do_parse(
@@ -114,54 +112,63 @@ def render():
 def _do_parse(
     settings, channel, from_date, to_date, limit, export_format, output_dir, incremental, fields
 ):
-    # Two-path progress: real bar if limit known, counter text if unlimited
-    if limit > 0:
-        progress_bar = st.progress(0, text=t("parser.spinner_connecting"))
-        status = st.empty()
-    else:
-        progress_bar = None
-        status = st.empty()
-        status.info(t("parser.spinner_connecting"))
+    with st.status(t("parser.status_label"), expanded=True) as status:
+        status.update(label=t("parser.spinner_connecting"), state="running")
+        progress_placeholder = st.empty()
 
-    def on_progress(count: int) -> None:
-        if limit > 0:
-            pct = min(int(count / limit * 100), 99)
-            progress_bar.progress(pct, text=t("parser.progress_parsed", count=count))
-        else:
-            if count % 10 == 0:
-                status.info(t("parser.progress_parsed", count=count))
+        def on_progress(count: int) -> None:
+            if limit > 0:
+                pct = min(int(count / limit * 100), 99)
+                progress_placeholder.progress(pct, text=t("parser.progress_parsed", count=count))
+            else:
+                if count % 10 == 0:
+                    status.update(label=t("parser.progress_parsed", count=count), state="running")
 
-    try:
-        result, output_files = asyncio.run(
-            _parse_async(
-                settings,
-                channel,
-                from_date,
-                to_date,
-                limit,
-                export_format,
-                output_dir,
-                incremental,
-                fields,
-                on_progress,
-                status,
+        try:
+            result, output_files = asyncio.run(
+                _parse_async(
+                    settings,
+                    channel,
+                    from_date,
+                    to_date,
+                    limit,
+                    export_format,
+                    output_dir,
+                    incremental,
+                    fields,
+                    on_progress,
+                    status,
+                )
             )
-        )
-        st.session_state["last_parse_result"] = result.model_dump(mode="json")
-        st.session_state["last_output_files"] = output_files
-        if progress_bar is not None:
-            progress_bar.progress(100, text=t("parser.progress_done"))
-        status.success(t("parser.success", count=result.total_messages))
-    except Exception as e:
-        if progress_bar is not None:
-            progress_bar.empty()
-        status.empty()
-        _show_parse_error(e, channel)
+            st.session_state["last_parse_result"] = result.model_dump(mode="json")
+            st.session_state["last_output_files"] = output_files
+
+            if limit > 0:
+                progress_placeholder.progress(100, text=t("parser.progress_done"))
+
+            status.update(label=t("parser.success", count=result.total_messages), state="complete")
+            st.toast(t("parser.toast_success", count=result.total_messages), icon="\u2705")
+
+            # Invalidate search/analytics caches so they pick up new data
+            _invalidate_data_caches()
+
+        except Exception as e:
+            status.update(label=t("parser.status_error"), state="error")
+            _show_parse_error(e, channel)
+            st.toast(t("parser.toast_error"), icon="\u274c")
+
+
+def _invalidate_data_caches():
+    """Clear search and analytics result caches after a successful parse."""
+    from tg_harvest.web.pages.analytics import _load_results_cached as analytics_cache
+    from tg_harvest.web.pages.search import _load_results_cached as search_cache
+
+    search_cache.clear()
+    analytics_cache.clear()
 
 
 def _show_parse_error(e: Exception, channel: str) -> None:
     """Categorize and display a user-friendly parse error."""
-    # Check for flood wait via class name (avoids direct Telethon import in web layer)
     cls_name = type(e).__name__
     err_str = str(e).lower()
 
@@ -236,7 +243,7 @@ async def _parse_async(
             if last_id:
                 min_id = last_id
 
-        status.info(t("parser.spinner_parsing"))
+        status.update(label=t("parser.spinner_parsing"), state="running")
 
         result = await parser.parse(
             channel=channel_id,
@@ -284,7 +291,7 @@ def _show_result(result_data: dict, output_files: list[str]):
     col2.metric(t("parser.metric_channel_id"), result_data["channel"]["id"])
 
     username = result_data["channel"].get("username")
-    col3.metric(t("parser.metric_username"), f"@{username}" if username else t("parser.col_id"))
+    col3.metric(t("parser.metric_username"), f"@{username}" if username else "N/A")
     col4.metric(t("parser.metric_members"), result_data["channel"].get("members_count") or "N/A")
 
     if result_data["messages"]:
@@ -294,7 +301,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                 {
                     t("parser.col_id"): msg["id"],
                     t("parser.col_date"): msg.get("date", ""),
-                    t("parser.col_text"): _truncate(msg.get("text")),
+                    t("parser.col_text"): truncate(msg.get("text"), limit=200),
                     t("parser.col_views"): msg.get("views") or 0,
                     t("parser.col_forwards"): msg.get("forwards") or 0,
                     t("parser.col_reactions"): msg.get("reactions", {}).get("total", 0)
@@ -330,6 +337,27 @@ def _show_result(result_data: dict, output_files: list[str]):
             use_container_width=True,
             hide_index=True,
         )
+
+        # Message detail viewer
+        with st.expander(t("parser.message_detail_expander")):
+            msg_ids = [msg["id"] for msg in result_data["messages"]]
+            selected_msg_id = st.selectbox(
+                t("parser.message_detail_id_label"),
+                msg_ids,
+                key="message_detail_select",
+            )
+            for msg in result_data["messages"]:
+                if msg["id"] == selected_msg_id:
+                    st.markdown(f"**{t('parser.col_date')}:** {msg.get('date', '')}")
+                    st.text_area(
+                        t("parser.col_text"),
+                        value=msg.get("text") or "",
+                        height=200,
+                        disabled=True,
+                    )
+                    if msg.get("media"):
+                        st.json(msg["media"])
+                    break
 
     if output_files:
         st.markdown(t("parser.exported_files_label"))
