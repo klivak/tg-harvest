@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-02-19
+
+### Added
+
+- **Web — Channels → Parse bridge**: Quick Actions block on Channels page — selectbox with
+  all loaded channels + ⚡ Go to Parse button that auto-navigates and pre-fills the channel
+  input; eliminates manual copy-paste of numeric IDs for private/restricted channels
+- **Web — Sidebar status indicators**: always-visible auth status (✅/❌) and parsed file
+  count (📄 N files) in sidebar — no need to navigate to Auth page to check session state
+- **Web — Programmatic navigation**: `session_state["nav_page"]` support in `app.py` so
+  any page can redirect to another page on next rerun
+- **Web — Theming**: Telegram blue `#0088cc` primary color via `.streamlit/config.toml`
+  and `--theme.*` subprocess args; `src/tg_harvest/web/theme.py` with `apply_custom_css()`
+  (nav-style sidebar radio without circles, hover highlight, status badge styles) and
+  `CHART_COLORS` / `CHART_LAYOUT` constants for consistent Plotly chart styling
+- **Web — Navigation icons**: `🔑 Auth`, `📋 Channels`, `⚡ Parse`, `🔍 Search`,
+  `📊 Analytics` in sidebar nav labels (both EN and UK)
+- **Web — Toast notifications**: `st.toast()` after successful parse and channel load
+- **Web — Cache control**: automatic invalidation of Search/Analytics caches after a
+  successful parse; manual 🔄 refresh buttons on Search and Analytics pages
+- **Web — Parser `st.status()`**: replaces `st.progress()` + `st.empty()` — shows
+  step-by-step status (Connecting → Parsing → complete/error) with collapsible container
+- **Web — Parser reorganized layout**: quick options (format, incremental, limit) on one
+  row; Advanced expander for date range, output dir, field selection; Parse button
+  full-width (`use_container_width=True`)
+- **Web — Message detail viewer**: expander below results table with selectbox to view
+  full text and media JSON for any parsed message
+- **Web — Analytics tabs**: Single Channel | Compare Channels tabs at top of Analytics page
+- **Web — Channel comparison**: multiselect (2–5 datasets), metrics comparison table,
+  overlay grouped bar charts for messages-per-day and activity-by-hour
+- **Web — Chart data export**: Download chart data CSV button under messages-per-day chart
+- **Web — Private channel column**: 🔐 indicator column in Channels table for channels
+  without a public username; 🔒 emoji for restricted channels
+- `src/tg_harvest/web/helpers.py`: shared `truncate(text, limit)` utility (was duplicated
+  in parser.py, search.py, analytics.py)
+- `tests/test_web/test_helpers.py`: unit tests for `truncate()`
+- `tests/test_web/test_i18n.py`: locale consistency tests (EN/UK key parity, no empty values)
+
+### Changed
+
+- **Web — i18n**: ~25 new translation keys added to both `en.json` and `uk.json`; text
+  truncation in results tables increased from 100 to 200 characters
+- **Web — Plotly charts**: all 5 charts in Analytics now use Telegram-inspired color palette
+  and transparent background instead of default Plotly theme
+- Tests: 504 total (+15 new web tests)
+
 ## [0.5.0] - 2026-02-18
 
 ### Added
