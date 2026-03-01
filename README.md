@@ -333,6 +333,15 @@ The web UI provides:
 
 Each page has a collapsible **Tips / Підказки** section with usage hints.
 
+#### Web UI step-by-step workflow
+
+1. **Auth Status** — verify your Telegram session is active (green indicator in sidebar)
+2. **Channels** — click "Load channels" to fetch your dialogs list
+3. **Parse** — select a channel from the dropdown (loaded from step 2), choose date range/limit preset, click "Parse"
+4. **Search / Analytics / Files** — explore parsed data
+
+> **Note:** Telegram may temporarily throttle requests (FloodWait) approximately every 3000 messages. This is normal — the parser will automatically pause for 30–60 seconds and then continue. Do not close the page during the pause.
+
 ---
 
 ## Output Format
@@ -783,6 +792,15 @@ tg-harvest web -p 9000
 - **Перемикач мови** — English / Українська (бічна панель)
 
 На кожній сторінці є розділ **Підказки** з поясненнями.
+
+#### Покроковий воркфлоу веб-інтерфейсу
+
+1. **Авторизація** — переконайтеся, що сесія активна (зелений індикатор у бічній панелі)
+2. **Канали** — натисніть "Завантажити канали", щоб отримати список діалогів
+3. **Парсинг** — оберіть канал зі списку (завантажений у кроці 2), виберіть діапазон дат / пресет, натисніть "Парсити"
+4. **Пошук / Аналітика / Файли** — досліджуйте розпарсені дані
+
+> **Зверніть увагу:** Telegram може тимчасово обмежити запити (FloodWait) приблизно кожні 3000 повідомлень. Це нормально — парсер автоматично зупиниться на 30–60 секунд і продовжить. Не закривайте сторінку під час паузи.
 
 ---
 

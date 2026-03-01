@@ -98,11 +98,12 @@ def render():
 
     today = date.today()
     year_start = date(today.year, 1, 1)
-    preset_cols = st.columns(8)
+    preset_cols = st.columns(9)
     presets = [
         ("parser.preset_100", None, None, 100),
         ("parser.preset_1w", today - timedelta(weeks=1), today, 0),
         ("parser.preset_1m", today - timedelta(days=30), today, 0),
+        ("parser.preset_6m", today - timedelta(days=182), today, 0),
         ("parser.preset_ytd", year_start, today, 0),
         ("parser.preset_1y", today - timedelta(days=365), today, 0),
         ("parser.preset_2y", today - timedelta(days=730), today, 0),
@@ -190,6 +191,8 @@ def render():
 
         if not selected_fields:
             st.warning(t("parser.fields_warning"))
+
+    st.info(t("parser.flood_wait_info"))
 
     # Parse button — show reason if disabled
     if not channel:

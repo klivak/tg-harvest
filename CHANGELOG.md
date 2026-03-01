@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-03-01
+
+### Added
+
+- **6-month date preset** on parser page
+- **Web UI workflow guide** in README (EN + UK) — step-by-step: Auth → Channels → Parse → Explore
+- **FloodWait info block** on parser page and in README — warns about ~3000 msg throttle pauses
+
 ## [0.11.0] - 2026-03-01
 
 ### Added
