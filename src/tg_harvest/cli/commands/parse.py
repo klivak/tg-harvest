@@ -116,8 +116,8 @@ console = Console()
 @click.option(
     "--split-parts",
     default=1,
-    type=click.IntRange(1, 10),
-    help="Split output into N parts (1-10).",
+    type=click.IntRange(1, 20),
+    help="Split output into N parts (1-20).",
     show_default=True,
 )
 def parse(

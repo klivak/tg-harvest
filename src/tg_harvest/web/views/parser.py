@@ -552,7 +552,7 @@ def _show_result(result_data: dict, output_files: list[str]):
         split_parts = st.number_input(
             t("parser.split_parts_label"),
             min_value=1,
-            max_value=10,
+            max_value=20,
             value=1,
             help=t("parser.split_parts_help"),
             key="download_split_parts",
