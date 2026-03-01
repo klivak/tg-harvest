@@ -12,7 +12,9 @@ from tg_harvest.parsers.media_parser import parse_media
 logger = logging.getLogger(__name__)
 
 
-def parse_message(msg, channel_id: int) -> ParsedMessage | None:
+def parse_message(
+    msg, channel_id: int, channel_username: str | None = None
+) -> ParsedMessage | None:
     """Convert a Telethon Message to a ParsedMessage.
 
     Returns None if the message is a service message or cannot be parsed.
@@ -27,6 +29,7 @@ def parse_message(msg, channel_id: int) -> ParsedMessage | None:
         return ParsedMessage(
             id=msg.id,
             channel_id=channel_id,
+            channel_username=channel_username,
             date=msg.date,
             text=msg.message or "",
             sender_id=_extract_peer_id(msg.from_id),

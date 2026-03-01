@@ -2,7 +2,7 @@
 
 from telethon.tl import types
 
-from tg_harvest.models.media import MediaInfo, MediaType
+from tg_harvest.models.media import MediaInfo, MediaType, PollAnswer
 
 
 def parse_media(media) -> MediaInfo | None:
@@ -16,10 +16,25 @@ def parse_media(media) -> MediaInfo | None:
         return _parse_document(media)
     if isinstance(media, types.MessageMediaWebPage):
         return _parse_web_page(media)
+    if isinstance(media, types.MessageMediaGeoLive):
+        geo = media.geo
+        if isinstance(geo, types.GeoPoint):
+            return MediaInfo(type=MediaType.GEO, latitude=geo.lat, longitude=geo.long)
+        return MediaInfo(type=MediaType.GEO)
     if isinstance(media, types.MessageMediaGeo):
+        geo = media.geo
+        if isinstance(geo, types.GeoPoint):
+            return MediaInfo(type=MediaType.GEO, latitude=geo.lat, longitude=geo.long)
         return MediaInfo(type=MediaType.GEO)
     if isinstance(media, types.MessageMediaContact):
-        return MediaInfo(type=MediaType.CONTACT)
+        first = media.first_name or ""
+        last = media.last_name or ""
+        name = f"{first} {last}".strip() or None
+        return MediaInfo(
+            type=MediaType.CONTACT,
+            contact_name=name,
+            contact_phone=media.phone_number or None,
+        )
     if isinstance(media, types.MessageMediaPoll):
         return _parse_poll(media)
 
@@ -118,4 +133,23 @@ def _parse_poll(media: types.MessageMediaPoll) -> MediaInfo:
     # question can be a TextWithEntities in newer TL layers
     if hasattr(title, "text"):
         title = title.text
-    return MediaInfo(type=MediaType.POLL, title=title)
+
+    answers: list[PollAnswer] = []
+    if hasattr(poll, "answers") and poll.answers:
+        for answer in poll.answers:
+            answer_text = answer.text
+            if hasattr(answer_text, "text"):
+                answer_text = answer_text.text
+            answers.append(PollAnswer(text=str(answer_text), voter_count=0))
+
+    # Merge voter counts from results
+    if media.results and hasattr(media.results, "results") and media.results.results:
+        for i, result in enumerate(media.results.results):
+            if i < len(answers):
+                answers[i].voter_count = result.voters
+
+    return MediaInfo(
+        type=MediaType.POLL,
+        title=title,
+        poll_answers=answers if answers else None,
+    )

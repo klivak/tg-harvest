@@ -21,9 +21,15 @@ def render():
     with st.expander(t("channels.tips_expander"), expanded=False):
         st.markdown(t("channels.tips_body"))
 
-    limit = st.sidebar.slider(t("channels.sidebar_slider"), 10, 500, 100)
+    col_btn, col_limit = st.columns([2, 3])
+    with col_limit:
+        limit = st.slider(t("channels.sidebar_slider"), 10, 500, 100)
+    with col_btn:
+        load_clicked = st.button(
+            t("channels.load_button"), type="primary", use_container_width=True
+        )
 
-    if st.button(t("channels.load_button"), type="primary"):
+    if load_clicked:
         with st.spinner(t("channels.spinner_fetching")):
             try:
                 channels = _fetch_channels_cached(
@@ -135,17 +141,25 @@ async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
         parser = ChannelParser(session.client, rate_limiter)
         channel_list = await parser.list_channels(limit=limit)
 
-    return [
-        {
-            _t("channels.col_id"): ch.id,
-            _t("channels.col_title"): ch.title,
-            _t("channels.col_username"): ch.username or "",
-            _t("channels.col_type"): _t("channels.type_group")
-            if ch.is_group
-            else _t("channels.type_channel"),
-            _t("channels.col_members"): ch.members_count or 0,
-            _t("channels.col_restricted"): "\U0001f512" if ch.restricted else "",
-            _t("channels.col_private"): "\U0001f510" if not ch.username else "",
-        }
-        for ch in channel_list
-    ]
+    rows = []
+    for ch in channel_list:
+        if ch.is_bot:
+            ch_type = _t("channels.type_bot")
+        elif ch.is_group:
+            ch_type = _t("channels.type_group")
+        elif ch.is_channel:
+            ch_type = _t("channels.type_channel")
+        else:
+            ch_type = _t("channels.type_user")
+        rows.append(
+            {
+                _t("channels.col_id"): ch.id,
+                _t("channels.col_title"): ch.title,
+                _t("channels.col_username"): ch.username or "",
+                _t("channels.col_type"): ch_type,
+                _t("channels.col_members"): ch.members_count or 0,
+                _t("channels.col_restricted"): "\U0001f512" if ch.restricted else "",
+                _t("channels.col_private"): "\U0001f510" if not ch.username else "",
+            }
+        )
+    return rows

@@ -156,21 +156,34 @@ class TestParseMedia:
         assert result.url == "https://example.com"
 
     def test_geo(self):
+        geo_point = MagicMock(spec=types.GeoPoint)
+        geo_point.lat = 50.45
+        geo_point.long = 30.52
         media = MagicMock(spec=types.MessageMediaGeo)
+        media.geo = geo_point
         result = parse_media(media)
         assert result.type == MediaType.GEO
+        assert result.latitude == 50.45
+        assert result.longitude == 30.52
 
     def test_contact(self):
         media = MagicMock(spec=types.MessageMediaContact)
+        media.first_name = "John"
+        media.last_name = "Doe"
+        media.phone_number = "+380501234567"
         result = parse_media(media)
         assert result.type == MediaType.CONTACT
+        assert result.contact_name == "John Doe"
+        assert result.contact_phone == "+380501234567"
 
     def test_poll_with_plain_question(self):
         poll = MagicMock()
         poll.question = "What color?"
+        poll.answers = None
 
         media = MagicMock(spec=types.MessageMediaPoll)
         media.poll = poll
+        media.results = None
 
         result = parse_media(media)
         assert result.type == MediaType.POLL
@@ -181,9 +194,11 @@ class TestParseMedia:
 
         poll = MagicMock()
         poll.question = question
+        poll.answers = None
 
         media = MagicMock(spec=types.MessageMediaPoll)
         media.poll = poll
+        media.results = None
 
         result = parse_media(media)
         assert result.type == MediaType.POLL

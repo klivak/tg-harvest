@@ -5,7 +5,7 @@ import csv
 import io
 import json
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import streamlit as st
@@ -13,6 +13,7 @@ import streamlit as st
 from tg_harvest.config import Settings
 from tg_harvest.config.constants import ALL_EXPORT_FIELDS
 from tg_harvest.exporters.base import build_row, filter_fields
+from tg_harvest.parsers.parse_options import ParseOptions
 from tg_harvest.web.helpers import truncate
 from tg_harvest.web.i18n import t
 
@@ -39,25 +40,84 @@ def render():
     )
 
     # Quick options on one line
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
-        export_format = st.selectbox(t("parser.format_label"), ["json", "csv", "xlsx", "all"])
+        export_format = st.selectbox(
+            t("parser.format_label"), ["json", "csv", "xlsx", "html", "all"]
+        )
     with col2:
         incremental = st.checkbox(t("parser.incremental_label"), help=t("parser.incremental_help"))
-    with col3:
-        limit = st.number_input(t("parser.limit_label"), min_value=0, value=0, step=100)
 
     if incremental:
         st.caption(t("parser.incremental_caption"))
 
+    # Date range — always visible with quick preset buttons
+    st.markdown(t("parser.date_range_label"))
+
+    today = date.today()
+    preset_cols = st.columns(5)
+    presets = [
+        ("parser.preset_100", None, None, 100),
+        ("parser.preset_1y", today - timedelta(days=365), today, 0),
+        ("parser.preset_2y", today - timedelta(days=730), today, 0),
+        ("parser.preset_3y", today - timedelta(days=1095), today, 0),
+        ("parser.preset_all", None, None, 0),
+    ]
+    for i, (label_key, fd, td, lim) in enumerate(presets):
+        with preset_cols[i]:
+            if st.button(t(label_key), use_container_width=True):
+                st.session_state["from_date_input"] = fd
+                st.session_state["to_date_input"] = td
+                st.session_state["limit_input"] = lim
+                st.rerun()
+
+    date_col1, date_col2, date_col3 = st.columns(3)
+    with date_col1:
+        from_date = st.date_input(
+            t("parser.from_date_label"),
+            value=st.session_state.get("from_date_input"),
+            key="from_date_input",
+        )
+    with date_col2:
+        to_date = st.date_input(
+            t("parser.to_date_label"),
+            value=st.session_state.get("to_date_input"),
+            key="to_date_input",
+        )
+    with date_col3:
+        limit = st.number_input(
+            t("parser.limit_label"),
+            min_value=0,
+            value=st.session_state.get("limit_input", 0),
+            step=100,
+            key="limit_input",
+        )
+
+    # Extended options
+    st.markdown(t("parser.extended_options_label"))
+    ext_col1, ext_col2, ext_col3 = st.columns(3)
+    with ext_col1:
+        download_media = st.checkbox(
+            t("parser.download_media_label"),
+            help=t("parser.download_media_help"),
+        )
+    with ext_col2:
+        fetch_replies = st.checkbox(
+            t("parser.fetch_replies_label"),
+            help=t("parser.fetch_replies_help"),
+        )
+    with ext_col3:
+        enrich_senders = st.checkbox(
+            t("parser.enrich_senders_label"),
+            help=t("parser.enrich_senders_help"),
+        )
+
+    max_media_size = 50
+    if download_media:
+        max_media_size = st.slider(t("parser.max_media_size_label"), 1, 200, 50)
+
     # Advanced options in expander
     with st.expander(t("parser.advanced_expander"), expanded=False):
-        col1, col2 = st.columns(2)
-        with col1:
-            from_date = st.date_input(t("parser.from_date_label"), value=None)
-        with col2:
-            to_date = st.date_input(t("parser.to_date_label"), value=None)
-
         output_dir = st.text_input(t("parser.output_dir_label"), value=str(settings.output_dir))
 
         # Field selection
@@ -77,10 +137,12 @@ def render():
         if not selected_fields:
             st.warning(t("parser.fields_warning"))
 
-    # Parse button
+    # Parse button — show reason if disabled
     if not channel:
         st.info(t("parser.empty_state_info"))
         st.caption(t("parser.empty_state_hint"))
+    elif not selected_fields:
+        st.warning(t("parser.fields_warning"))
 
     if st.button(
         t("parser.parse_button"),
@@ -89,6 +151,12 @@ def render():
         use_container_width=True,
     ):
         fields = selected_fields if not select_all else None
+        options = ParseOptions(
+            download_media=download_media,
+            max_media_size_mb=max_media_size,
+            fetch_replies=fetch_replies,
+            enrich_senders=enrich_senders,
+        )
         _do_parse(
             settings,
             channel,
@@ -99,6 +167,7 @@ def render():
             output_dir,
             incremental,
             fields,
+            options,
         )
 
     # Show last result
@@ -110,7 +179,16 @@ def render():
 
 
 def _do_parse(
-    settings, channel, from_date, to_date, limit, export_format, output_dir, incremental, fields
+    settings,
+    channel,
+    from_date,
+    to_date,
+    limit,
+    export_format,
+    output_dir,
+    incremental,
+    fields,
+    options: ParseOptions,
 ):
     with st.status(t("parser.status_label"), expanded=True) as status:
         status.update(label=t("parser.spinner_connecting"), state="running")
@@ -121,8 +199,7 @@ def _do_parse(
                 pct = min(int(count / limit * 100), 99)
                 progress_placeholder.progress(pct, text=t("parser.progress_parsed", count=count))
             else:
-                if count % 10 == 0:
-                    status.update(label=t("parser.progress_parsed", count=count), state="running")
+                progress_placeholder.markdown(t("parser.progress_parsed", count=count))
 
         try:
             result, output_files = asyncio.run(
@@ -138,6 +215,7 @@ def _do_parse(
                     fields,
                     on_progress,
                     status,
+                    options,
                 )
             )
             st.session_state["last_parse_result"] = result.model_dump(mode="json")
@@ -204,18 +282,21 @@ async def _parse_async(
     fields,
     on_progress,
     status,
+    options: ParseOptions,
 ):
     from tg_harvest.client.rate_limiter import RateLimiter
     from tg_harvest.client.session import TelegramSession
     from tg_harvest.exporters.csv_exporter import CsvExporter
+    from tg_harvest.exporters.html_exporter import HtmlExporter
     from tg_harvest.exporters.json_exporter import JsonExporter
     from tg_harvest.exporters.xlsx_exporter import XlsxExporter
     from tg_harvest.parsers.channel_parser import ChannelParser
     from tg_harvest.storage.state import StateManager
 
-    out_path = Path(output_dir).resolve()
+    # Reject path traversal
     if ".." in Path(output_dir).parts:
         raise ValueError("Output directory must not contain '..' path components.")
+    out_path = Path(output_dir).resolve()
 
     fd = (
         datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)
@@ -252,6 +333,7 @@ async def _parse_async(
             limit=limit if limit > 0 else 0,
             min_id=min_id,
             on_progress=on_progress,
+            options=options,
         )
 
         if result.messages:
@@ -267,6 +349,9 @@ async def _parse_async(
             output_files.append(str(path))
         if export_format in ("xlsx", "all"):
             path = await XlsxExporter(fields).export(result, out_path)
+            output_files.append(str(path))
+        if export_format in ("html", "all"):
+            path = await HtmlExporter(fields).export(result, out_path)
             output_files.append(str(path))
 
         return result, output_files
@@ -365,7 +450,7 @@ def _show_result(result_data: dict, output_files: list[str]):
             size = _format_size(f)
             st.code(f"{f}  ({size})" if size else f)
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.download_button(
@@ -400,6 +485,18 @@ def _show_result(result_data: dict, output_files: list[str]):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
 
+    with col4:
+        html_data = _build_html(result_data)
+        if html_data:
+            st.download_button(
+                t("parser.download_html"),
+                data=html_data,
+                file_name=(
+                    f"{result_data['channel'].get('username', result_data['channel']['id'])}.html"
+                ),
+                mime="text/html",
+            )
+
 
 def _build_csv(result_data: dict) -> str:
     from tg_harvest.models.message import ParsedMessage
@@ -414,7 +511,7 @@ def _build_csv(result_data: dict) -> str:
             msg = ParsedMessage.model_validate(msg_data)
             row = filter_fields(build_row(msg), fields)
             writer.writerow(row)
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             continue
 
     return output.getvalue()
@@ -438,11 +535,23 @@ def _build_xlsx(result_data: dict) -> bytes | None:
                 msg = ParsedMessage.model_validate(msg_data)
                 row = filter_fields(build_row(msg), fields)
                 ws.append([row.get(f, "") for f in fields])
-            except Exception:
+            except (ValueError, KeyError, TypeError):
                 continue
 
         buf = io.BytesIO()
         wb.save(buf)
         return buf.getvalue()
     except ImportError:
+        return None
+
+
+def _build_html(result_data: dict) -> str | None:
+    try:
+        from tg_harvest.exporters.html_exporter import HtmlExporter
+        from tg_harvest.models.parse_result import ParseResult
+
+        result = ParseResult.model_validate(result_data)
+        exporter = HtmlExporter()
+        return exporter._render(result)
+    except (ValueError, ImportError):
         return None

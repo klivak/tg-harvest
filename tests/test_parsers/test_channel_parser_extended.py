@@ -76,6 +76,7 @@ class TestParseIncrementalMode:
             patch("tg_harvest.parsers.channel_parser.parse_message", side_effect=parsed),
         ):
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_aiter(msgs))
 
@@ -90,6 +91,7 @@ class TestParseIncrementalMode:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_aiter([]))
 
@@ -104,6 +106,7 @@ class TestParseIncrementalMode:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_aiter([]))
 
@@ -119,6 +122,7 @@ class TestParseIncrementalMode:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_aiter([]))
 
@@ -134,6 +138,7 @@ class TestParseIncrementalMode:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_aiter([]))
 
@@ -183,6 +188,7 @@ class TestListChannelsWithData:
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = channel_mock
             mt.Chat = type(None)
+            mt.User = type(None)
             parser._client.iter_dialogs = MagicMock(return_value=_aiter([dialog1, dialog2]))
 
             result = await parser.list_channels()
@@ -195,15 +201,16 @@ class TestListChannelsWithData:
         assert result[1].is_group is True
 
     @pytest.mark.asyncio
-    async def test_list_channels_skips_users(self, parser):
-        """User dialogs should not appear in channel list."""
-        user_entity = MagicMock()  # Not Channel or Chat type
+    async def test_list_channels_skips_unknown_entities(self, parser):
+        """Unknown entity types (not Channel, Chat, or User) should be skipped."""
+        unknown_entity = MagicMock()
         dialog = MagicMock()
-        dialog.entity = user_entity
+        dialog.entity = unknown_entity
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
-            mt.Channel = type(None)  # Won't match MagicMock
+            mt.Channel = type(None)
             mt.Chat = type(None)
+            mt.User = type(None)
             parser._client.iter_dialogs = MagicMock(return_value=_aiter([dialog]))
 
             result = await parser.list_channels()
@@ -216,6 +223,7 @@ class TestListChannelsWithData:
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(None)
             mt.Chat = type(None)
+            mt.User = type(None)
             parser._client.iter_dialogs = MagicMock(return_value=_aiter([]))
 
             await parser.list_channels(limit=50)
@@ -231,6 +239,7 @@ class TestListChannelsWithData:
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(ch)
             mt.Chat = type(None)
+            mt.User = type(None)
             parser._client.iter_dialogs = MagicMock(return_value=_aiter([dialog]))
 
             result = await parser.list_channels()
@@ -246,6 +255,7 @@ class TestListChannelsWithData:
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(ch)
             mt.Chat = type(None)
+            mt.User = type(None)
             parser._client.iter_dialogs = MagicMock(return_value=_aiter([dialog]))
 
             result = await parser.list_channels()
@@ -266,6 +276,7 @@ class TestGetChannelInfoEdgeCases:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
 
             info = await parser.get_channel_info(12345)
@@ -280,6 +291,7 @@ class TestGetChannelInfoEdgeCases:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mt:
             mt.Channel = type(entity)
+            mt.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
 
             info = await parser.get_channel_info("@test")

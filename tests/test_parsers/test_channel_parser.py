@@ -36,6 +36,27 @@ def _make_channel_entity(
     return entity
 
 
+def _make_user_entity(
+    entity_id=200,
+    first_name="Test",
+    last_name="Bot",
+    username="test_bot",
+    bot=True,
+    verified=False,
+    about=None,
+):
+    """Create a mock Telethon User entity."""
+    entity = MagicMock()
+    entity.id = entity_id
+    entity.first_name = first_name
+    entity.last_name = last_name
+    entity.username = username
+    entity.bot = bot
+    entity.verified = verified
+    entity.about = about
+    return entity
+
+
 def _make_telethon_msg(msg_id, text="Test", date=None):
     """Create a simple mock Telethon message."""
     msg = MagicMock()
@@ -73,6 +94,7 @@ class TestGetChannelInfo:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
 
             info = await parser.get_channel_info("@test_ch")
@@ -91,6 +113,7 @@ class TestGetChannelInfo:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
 
             info = await parser.get_channel_info("@group")
@@ -104,6 +127,7 @@ class TestGetChannelInfo:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
 
             info = await parser.get_channel_info(12345)
@@ -117,12 +141,83 @@ class TestGetChannelInfo:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
 
             info = await parser.get_channel_info("@restricted")
 
         assert info.restricted is True
         assert info.scam is True
+
+    @pytest.mark.asyncio
+    async def test_get_channel_info_bot(self, parser):
+        entity = _make_user_entity(
+            entity_id=300,
+            first_name="Helper",
+            last_name="Bot",
+            username="helper_bot",
+            bot=True,
+            verified=True,
+        )
+
+        with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
+            mock_types.User = type(entity)
+            mock_types.Channel = type(None)
+            parser._client.get_entity = AsyncMock(return_value=entity)
+
+            info = await parser.get_channel_info("@helper_bot")
+
+        assert info.id == 300
+        assert info.title == "Helper Bot"
+        assert info.username == "helper_bot"
+        assert info.is_bot is True
+        assert info.is_channel is False
+        assert info.is_group is False
+        assert info.verified is True
+
+    @pytest.mark.asyncio
+    async def test_get_channel_info_private_chat(self, parser):
+        entity = _make_user_entity(
+            entity_id=400,
+            first_name="John",
+            last_name="Doe",
+            username=None,
+            bot=False,
+        )
+
+        with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
+            mock_types.User = type(entity)
+            mock_types.Channel = type(None)
+            parser._client.get_entity = AsyncMock(return_value=entity)
+
+            info = await parser.get_channel_info(400)
+
+        assert info.id == 400
+        assert info.title == "John Doe"
+        assert info.is_bot is False
+        assert info.is_channel is False
+        assert info.is_group is False
+        assert info.is_private is True
+
+    @pytest.mark.asyncio
+    async def test_get_channel_info_user_no_last_name(self, parser):
+        entity = _make_user_entity(
+            entity_id=500,
+            first_name="Alice",
+            last_name=None,
+            username="alice",
+            bot=False,
+        )
+
+        with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
+            mock_types.User = type(entity)
+            mock_types.Channel = type(None)
+            parser._client.get_entity = AsyncMock(return_value=entity)
+
+            info = await parser.get_channel_info("@alice")
+
+        assert info.title == "Alice"
+        assert info.is_bot is False
 
 
 class TestParse:
@@ -145,6 +240,7 @@ class TestParse:
             ),
         ):
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_async_iter(telethon_msgs))
 
@@ -159,6 +255,7 @@ class TestParse:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_async_iter([]))
 
@@ -182,6 +279,7 @@ class TestParse:
             ),
         ):
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_async_iter(telethon_msgs))
 
@@ -206,6 +304,7 @@ class TestParse:
             ),
         ):
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_async_iter(telethon_msgs))
 
@@ -231,6 +330,7 @@ class TestParse:
             ),
         ):
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_async_iter(telethon_msgs))
 
@@ -248,6 +348,7 @@ class TestParse:
 
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(entity)
+            mock_types.User = type(None)
             parser._client.get_entity = AsyncMock(return_value=entity)
             parser._client.iter_messages = MagicMock(return_value=_async_iter([]))
 
@@ -272,6 +373,66 @@ class TestListChannels:
         with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
             mock_types.Channel = type(None)
             mock_types.Chat = type(None)
+            mock_types.User = type(None)
             result = await parser.list_channels()
 
         assert result == []
+
+    @pytest.mark.asyncio
+    async def test_list_channels_includes_bots(self, parser):
+        bot_entity = _make_user_entity(
+            entity_id=301,
+            first_name="Shop",
+            last_name="Bot",
+            username="shop_bot",
+            bot=True,
+        )
+        channel_entity = _make_channel_entity(entity_id=100, title="News", username="news_ch")
+
+        bot_dialog = MagicMock()
+        bot_dialog.entity = bot_entity
+        ch_dialog = MagicMock()
+        ch_dialog.entity = channel_entity
+
+        parser._client.iter_dialogs = MagicMock(return_value=_async_iter([bot_dialog, ch_dialog]))
+
+        with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
+            mock_types.User = type(bot_entity)
+            mock_types.Channel = type(channel_entity)
+            mock_types.Chat = type(None)
+            result = await parser.list_channels()
+
+        assert len(result) == 2
+
+        bot_info = result[0]
+        assert bot_info.id == 301
+        assert bot_info.title == "Shop Bot"
+        assert bot_info.is_bot is True
+        assert bot_info.is_channel is False
+
+        ch_info = result[1]
+        assert ch_info.id == 100
+        assert ch_info.title == "News"
+        assert ch_info.is_channel is True
+        assert ch_info.is_bot is False
+
+    @pytest.mark.asyncio
+    async def test_list_channels_includes_private_chats(self, parser):
+        user_entity = _make_user_entity(
+            entity_id=401, first_name="Jane", last_name="Smith", username=None, bot=False
+        )
+        dialog = MagicMock()
+        dialog.entity = user_entity
+
+        parser._client.iter_dialogs = MagicMock(return_value=_async_iter([dialog]))
+
+        with patch("tg_harvest.parsers.channel_parser.types") as mock_types:
+            mock_types.User = type(user_entity)
+            mock_types.Channel = type(None)
+            mock_types.Chat = type(None)
+            result = await parser.list_channels()
+
+        assert len(result) == 1
+        assert result[0].title == "Jane Smith"
+        assert result[0].is_bot is False
+        assert result[0].is_private is True

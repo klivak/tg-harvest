@@ -35,10 +35,16 @@ def build_row(msg: ParsedMessage) -> dict:
         "forward_from_id": msg.forward_info.from_id if msg.forward_info else "",
         "forward_from_name": msg.forward_info.from_name if msg.forward_info else "",
         "reply_to_msg_id": msg.reply_info.reply_to_msg_id if msg.reply_info else "",
+        "reply_to_top_id": msg.reply_info.reply_to_top_id if msg.reply_info else "",
         "grouped_id": msg.grouped_id or "",
         "is_pinned": msg.is_pinned,
         "is_edited": msg.is_edited,
         "edit_date": msg.edit_date.strftime(DEFAULT_DATE_FORMAT) if msg.edit_date else "",
+        "url": msg.url,
+        "sender_username": msg.sender.username if msg.sender else "",
+        "sender_name": msg.sender.display_name if msg.sender else "",
+        "sender_is_bot": msg.sender.is_bot if msg.sender else "",
+        "media_local_path": msg.media.local_path if msg.media else "",
     }
 
 

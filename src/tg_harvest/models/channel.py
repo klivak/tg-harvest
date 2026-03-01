@@ -11,6 +11,7 @@ class ChannelInfo(BaseModel):
     username: str | None = None
     is_channel: bool = True
     is_group: bool = False
+    is_bot: bool = False
     is_private: bool = False
     members_count: int | None = None
     description: str | None = None

@@ -21,6 +21,11 @@ class MediaType(StrEnum):
     NONE = "none"
 
 
+class PollAnswer(BaseModel):
+    text: str
+    voter_count: int = 0
+
+
 class MediaInfo(BaseModel):
     type: MediaType
     file_name: str | None = None
@@ -32,3 +37,9 @@ class MediaInfo(BaseModel):
     title: str | None = None
     performer: str | None = None
     url: str | None = None
+    poll_answers: list[PollAnswer] | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    contact_name: str | None = None
+    contact_phone: str | None = None
+    local_path: str | None = None

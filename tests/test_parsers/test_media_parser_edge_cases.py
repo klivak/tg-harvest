@@ -148,6 +148,7 @@ class TestPollEdgeCases:
         poll = MagicMock(spec=[])  # No attributes
         media = MagicMock(spec=types.MessageMediaPoll)
         media.poll = poll
+        media.results = None
         result = parse_media(media)
         assert result.type == MediaType.POLL
         assert result.title is None
@@ -155,8 +156,10 @@ class TestPollEdgeCases:
     def test_poll_with_string_question(self):
         poll = MagicMock()
         poll.question = "Simple question?"
+        poll.answers = None
         media = MagicMock(spec=types.MessageMediaPoll)
         media.poll = poll
+        media.results = None
         result = parse_media(media)
         assert result.title == "Simple question?"
 

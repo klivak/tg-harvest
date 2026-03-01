@@ -109,6 +109,7 @@ if __name__ == "__main__" or st.runtime.exists():
         t("app.page_parse"),
         t("app.page_search"),
         t("app.page_analytics"),
+        t("app.page_files"),
     ]
 
     # Support programmatic navigation from other pages
@@ -120,7 +121,6 @@ if __name__ == "__main__" or st.runtime.exists():
         t("app.nav_label"),
         nav_pages,
         key=nav_key,
-        label_visibility="collapsed",
     )
 
     # Sidebar status indicators
@@ -148,5 +148,9 @@ if __name__ == "__main__" or st.runtime.exists():
         render()
     elif page == t("app.page_analytics"):
         from tg_harvest.web.pages.analytics import render
+
+        render()
+    elif page == t("app.page_files"):
+        from tg_harvest.web.pages.files import render
 
         render()

@@ -72,3 +72,60 @@ class ChannelStats:
             m.reactions.total for m in self._messages if m.reactions and m.reactions.total > 0
         ]
         return sum(totals) / len(totals) if totals else 0.0
+
+    def messages_per_week(self) -> dict[str, int]:
+        counter: Counter[str] = Counter()
+        for msg in self._messages:
+            week = msg.date.strftime("%G-W%V")
+            counter[week] += 1
+        return dict(sorted(counter.items()))
+
+    def messages_per_month(self) -> dict[str, int]:
+        counter: Counter[str] = Counter()
+        for msg in self._messages:
+            month = msg.date.strftime("%Y-%m")
+            counter[month] += 1
+        return dict(sorted(counter.items()))
+
+    def top_by_forwards(self, n: int = DEFAULT_TOP_N) -> list[ParsedMessage]:
+        with_forwards = [m for m in self._messages if m.forwards is not None and m.forwards > 0]
+        return sorted(with_forwards, key=lambda m: m.forwards or 0, reverse=True)[:n]
+
+    def engagement_rate(self) -> float:
+        rates = []
+        for m in self._messages:
+            if m.views and m.views > 0 and m.reactions and m.reactions.total > 0:
+                rates.append(m.reactions.total / m.views)
+        return sum(rates) / len(rates) if rates else 0.0
+
+    def avg_message_length(self) -> float:
+        if not self._messages:
+            return 0.0
+        lengths = [len(m.text) for m in self._messages]
+        return sum(lengths) / len(lengths)
+
+    def thread_stats(self) -> dict:
+        """Compute reply thread statistics from reply_to_top_id data."""
+        threads: dict[int, int] = {}
+        for msg in self._messages:
+            if msg.reply_info and msg.reply_info.reply_to_top_id:
+                top_id = msg.reply_info.reply_to_top_id
+                threads[top_id] = threads.get(top_id, 0) + 1
+
+        if not threads:
+            return {"total_threads": 0, "avg_replies": 0.0, "max_replies": 0}
+
+        return {
+            "total_threads": len(threads),
+            "avg_replies": sum(threads.values()) / len(threads),
+            "max_replies": max(threads.values()),
+        }
+
+    def top_threads(self, n: int = DEFAULT_TOP_N) -> list[tuple[int, int]]:
+        """Return top N threads by reply count as (top_msg_id, count) pairs."""
+        threads: dict[int, int] = {}
+        for msg in self._messages:
+            if msg.reply_info and msg.reply_info.reply_to_top_id:
+                top_id = msg.reply_info.reply_to_top_id
+                threads[top_id] = threads.get(top_id, 0) + 1
+        return sorted(threads.items(), key=lambda x: x[1], reverse=True)[:n]

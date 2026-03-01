@@ -5,6 +5,7 @@ import click
 from tg_harvest import __version__
 from tg_harvest.cli.commands.auth import auth
 from tg_harvest.cli.commands.channels import channels
+from tg_harvest.cli.commands.export import export
 from tg_harvest.cli.commands.parse import parse
 from tg_harvest.cli.commands.search import search
 from tg_harvest.cli.commands.web import web
@@ -21,6 +22,7 @@ def cli(verbose: bool):
 
 cli.add_command(auth)
 cli.add_command(channels)
+cli.add_command(export)
 cli.add_command(parse)
 cli.add_command(search)
 cli.add_command(web)

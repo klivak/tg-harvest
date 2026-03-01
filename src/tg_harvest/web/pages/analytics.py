@@ -2,6 +2,7 @@
 
 import csv
 import io
+from collections import Counter
 from pathlib import Path
 
 import plotly.express as px
@@ -10,6 +11,7 @@ import streamlit as st
 
 from tg_harvest.analytics.stats import ChannelStats
 from tg_harvest.config import Settings
+from tg_harvest.config.constants import MIN_WORD_LENGTH, TOP_REACTIONS_DISPLAY, TOP_WORDS_COUNT
 from tg_harvest.search.engine import SearchEngine
 from tg_harvest.web.helpers import truncate
 from tg_harvest.web.i18n import t
@@ -80,109 +82,131 @@ def _render_single(options: dict):
     with_media = stats.total - media_dist.get("text_only", 0)
     col6.metric(t("analytics.metric_with_media"), with_media)
 
+    col7, col8, col9 = st.columns(3)
+    col7.metric(t("analytics.metric_engagement_rate"), f"{stats.engagement_rate():.2%}")
+    col8.metric(t("analytics.metric_avg_msg_length"), f"{stats.avg_message_length():,.0f}")
+    top_fwd = stats.top_by_forwards(1)
+    col9.metric(t("analytics.metric_max_forwards"), top_fwd[0].forwards if top_fwd else 0)
+
     st.divider()
 
-    # Messages per day
-    st.subheader(t("analytics.per_day_subheader"))
-    per_day = stats.messages_per_day()
-    if per_day:
+    # Messages over time — with aggregation toggle
+    st.subheader(t("analytics.activity_subheader"))
+    time_modes = {
+        t("analytics.time_mode_day"): "day",
+        t("analytics.time_mode_week"): "week",
+        t("analytics.time_mode_month"): "month",
+    }
+    time_mode_label = st.radio(
+        t("analytics.time_mode_label"),
+        list(time_modes.keys()),
+        horizontal=True,
+        key="time_mode",
+    )
+    time_mode = time_modes[time_mode_label]
+
+    if time_mode == "day":
+        activity_data = stats.messages_per_day()
+    elif time_mode == "week":
+        activity_data = stats.messages_per_week()
+    else:
+        activity_data = stats.messages_per_month()
+
+    if activity_data:
         fig = px.bar(
-            x=list(per_day.keys()),
-            y=list(per_day.values()),
+            x=list(activity_data.keys()),
+            y=list(activity_data.values()),
             labels={"x": t("analytics.per_day_x"), "y": t("analytics.per_day_y")},
             color_discrete_sequence=CHART_COLORS,
         )
         fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
         _download_chart_csv(
-            per_day,
+            activity_data,
             t("analytics.per_day_x"),
             t("analytics.per_day_y"),
-            "messages_per_day.csv",
-            "dl_per_day",
+            f"messages_per_{time_mode}.csv",
+            "dl_per_time",
         )
 
     # Activity by hour
     st.subheader(t("analytics.by_hour_subheader"))
     by_hour = stats.activity_by_hour()
-    fig = px.bar(
-        x=list(by_hour.keys()),
-        y=list(by_hour.values()),
-        labels={"x": t("analytics.by_hour_x"), "y": t("analytics.by_hour_y")},
-        color_discrete_sequence=CHART_COLORS,
-    )
-    fig.update_layout(height=300, margin=dict(t=10, b=40), **CHART_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True)
-    st.caption(t("analytics.by_hour_caption"))
+    if by_hour:
+        fig = px.bar(
+            x=list(by_hour.keys()),
+            y=list(by_hour.values()),
+            labels={"x": t("analytics.by_hour_x"), "y": t("analytics.by_hour_y")},
+            color_discrete_sequence=CHART_COLORS,
+        )
+        fig.update_layout(height=300, margin=dict(t=10, b=40), **CHART_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption(t("analytics.by_hour_caption"))
+        _download_chart_csv(
+            by_hour,
+            t("analytics.by_hour_x"),
+            t("analytics.by_hour_y"),
+            "activity_by_hour.csv",
+            "dl_by_hour",
+        )
 
-    # Top by views / top by reactions
-    col1, col2 = st.columns(2)
+    # Top by views / top by reactions / top by forwards
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.subheader(t("analytics.top_views_subheader"))
-        top_views = stats.top_by_views()
-        if top_views:
-            rows = [
-                {
-                    t("analytics.col_id"): m.id,
-                    t("analytics.col_views"): m.views,
-                    t("analytics.col_text"): truncate(m.text),
-                    t("analytics.col_date"): m.date.strftime("%Y-%m-%d"),
-                }
-                for m in top_views
-            ]
-            st.dataframe(
-                rows,
-                column_config={
-                    t("analytics.col_id"): st.column_config.NumberColumn(
-                        t("analytics.col_id"), format="%d"
-                    ),
-                    t("analytics.col_views"): st.column_config.NumberColumn(
-                        t("analytics.col_views"), format="%d"
-                    ),
-                    t("analytics.col_text"): st.column_config.TextColumn(
-                        t("analytics.col_text"), width="large"
-                    ),
-                    t("analytics.col_date"): t("analytics.col_date"),
-                },
-                use_container_width=True,
-                hide_index=True,
-            )
-        else:
-            st.info(t("analytics.top_views_empty"))
+        _render_top_table(
+            stats.top_by_views(),
+            "analytics.top_views_subheader",
+            "analytics.col_views",
+            lambda m: m.views,
+            "analytics.top_views_empty",
+        )
 
     with col2:
-        st.subheader(t("analytics.top_reactions_subheader"))
-        top_reactions = stats.top_by_reactions()
-        if top_reactions:
-            rows = [
-                {
-                    t("analytics.col_id"): m.id,
-                    t("analytics.col_reactions"): m.reactions.total,
-                    t("analytics.col_text"): truncate(m.text),
-                    t("analytics.col_date"): m.date.strftime("%Y-%m-%d"),
-                }
-                for m in top_reactions
-            ]
-            st.dataframe(
-                rows,
-                column_config={
-                    t("analytics.col_id"): st.column_config.NumberColumn(
-                        t("analytics.col_id"), format="%d"
-                    ),
-                    t("analytics.col_reactions"): st.column_config.NumberColumn(
-                        t("analytics.col_reactions"), format="%d"
-                    ),
-                    t("analytics.col_text"): st.column_config.TextColumn(
-                        t("analytics.col_text"), width="large"
-                    ),
-                    t("analytics.col_date"): t("analytics.col_date"),
-                },
-                use_container_width=True,
-                hide_index=True,
-            )
-        else:
-            st.info(t("analytics.top_reactions_empty"))
+        _render_top_table(
+            stats.top_by_reactions(),
+            "analytics.top_reactions_subheader",
+            "analytics.col_reactions",
+            lambda m: m.reactions.total,
+            "analytics.top_reactions_empty",
+        )
+
+    with col3:
+        _render_top_table(
+            stats.top_by_forwards(),
+            "analytics.top_forwards_subheader",
+            "analytics.col_forwards",
+            lambda m: m.forwards,
+            "analytics.top_forwards_empty",
+        )
+
+    # Reply threads
+    thread_data = stats.thread_stats()
+    if thread_data["total_threads"] > 0:
+        st.subheader(t("analytics.threads_subheader"))
+        tc1, tc2, tc3 = st.columns(3)
+        tc1.metric(t("analytics.metric_total_threads"), thread_data["total_threads"])
+        tc2.metric(
+            t("analytics.metric_avg_replies"),
+            f"{thread_data['avg_replies']:.1f}",
+        )
+        tc3.metric(t("analytics.metric_max_replies"), thread_data["max_replies"])
+
+        top_threads_data = stats.top_threads()
+        if top_threads_data:
+            # Build rows: find the original message text for each thread
+            msg_map = {m.id: m for m in result.messages}
+            thread_rows = []
+            for top_id, count in top_threads_data:
+                orig = msg_map.get(top_id)
+                thread_rows.append(
+                    {
+                        t("analytics.col_id"): top_id,
+                        t("analytics.col_replies"): count,
+                        t("analytics.col_text"): truncate(orig.text if orig else "", limit=100),
+                    }
+                )
+            st.dataframe(thread_rows, use_container_width=True, hide_index=True)
 
     # Media distribution / reactions breakdown
     col1, col2 = st.columns(2)
@@ -202,7 +226,7 @@ def _render_single(options: dict):
         st.subheader(t("analytics.reactions_breakdown_subheader"))
         reactions = stats.reactions_summary()
         if reactions:
-            items = list(reactions.items())[:15]
+            items = list(reactions.items())[:TOP_REACTIONS_DISPLAY]
             fig = px.bar(
                 x=[r[0] for r in items],
                 y=[r[1] for r in items],
@@ -216,6 +240,73 @@ def _render_single(options: dict):
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info(t("analytics.reactions_breakdown_empty"))
+
+    # Word frequency
+    _render_word_frequency(result.messages)
+
+
+def _render_top_table(
+    messages: list,
+    header_key: str,
+    metric_key: str,
+    metric_getter,
+    empty_key: str,
+) -> None:
+    """Render a 'top by X' table (views, reactions, forwards)."""
+    st.subheader(t(header_key))
+    if not messages:
+        st.info(t(empty_key))
+        return
+    rows = [
+        {
+            t("analytics.col_id"): m.id,
+            t(metric_key): metric_getter(m),
+            t("analytics.col_text"): truncate(m.text),
+            t("analytics.col_date"): m.date.strftime("%Y-%m-%d"),
+        }
+        for m in messages
+    ]
+    st.dataframe(
+        rows,
+        column_config={
+            t("analytics.col_id"): st.column_config.NumberColumn(
+                t("analytics.col_id"), format="%d"
+            ),
+            t(metric_key): st.column_config.NumberColumn(t(metric_key), format="%d"),
+            t("analytics.col_text"): st.column_config.TextColumn(
+                t("analytics.col_text"), width="large"
+            ),
+            t("analytics.col_date"): t("analytics.col_date"),
+        },
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def _render_word_frequency(messages: list) -> None:
+    """Render word frequency chart from message texts."""
+    st.subheader(t("analytics.word_freq_subheader"))
+    words: Counter[str] = Counter()
+    for msg in messages:
+        if msg.text:
+            tokens = msg.text.lower().split()
+            tokens = [w for w in tokens if len(w) >= MIN_WORD_LENGTH]
+            words.update(tokens)
+    top_words = words.most_common(TOP_WORDS_COUNT)
+    if top_words:
+        fig = px.bar(
+            x=[w[0] for w in top_words],
+            y=[w[1] for w in top_words],
+            labels={
+                "x": t("analytics.word_freq_x"),
+                "y": t("analytics.word_freq_y"),
+            },
+            color_discrete_sequence=CHART_COLORS,
+        )
+        fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info(t("analytics.word_freq_empty"))
 
 
 def _render_compare(options: dict):

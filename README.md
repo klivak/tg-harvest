@@ -2,30 +2,84 @@
 
 [![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
 
-Telegram channel/chat data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel you have access to — including restricted channels where copying is disabled.
+Telegram data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel, group, bot, or private chat you have access to — including restricted channels where copying is disabled.
 
-**Use cases:** Telegram channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management.
+**Use cases:** Telegram channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management, bot conversation export.
 
 ## Quick Start
+
+> **No programming knowledge needed!** Follow these steps one by one. You only need to type the commands into your terminal (Command Prompt on Windows, Terminal on Mac/Linux).
+
+### Step 0 — Install Python
+
+You need Python 3.11 or newer. Check if you have it:
+
+```bash
+python --version
+```
+
+If this shows `Python 3.11` or higher, you're good. If not, download Python from [python.org/downloads](https://www.python.org/downloads/) and install it. **On Windows, check "Add Python to PATH" during installation.**
+
+### Step 1 — Download and install TG Harvest
+
+Open a terminal and run these commands one by one:
 
 ```bash
 git clone https://github.com/klivak/tg-harvest.git
 cd tg-harvest
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e .
-cp .env.example .env          # fill in TG_API_ID, TG_API_HASH, TG_PHONE
-tg-harvest auth login         # one-time login: enter the code sent to your Telegram app
+python -m venv .venv
 ```
 
-After login the session is saved locally. Everything else can be done via the **web UI** or CLI:
+Activate the virtual environment:
+- **Windows:** `.venv\Scripts\activate`
+- **Mac/Linux:** `source .venv/bin/activate`
+
+Then install:
+
+```bash
+pip install -e .
+```
+
+### Step 2 — Get Telegram API keys
+
+1. Go to [my.telegram.org/apps](https://my.telegram.org/apps) in your browser
+2. Log in with your phone number (the one linked to your Telegram account)
+3. Click **API development tools**
+4. Fill in any app title (e.g. `tg-harvest`) and short name (e.g. `harvest`)
+5. You'll see **App api_id** (a number) and **App api_hash** (a long string) — copy them
+
+### Step 3 — Configure
+
+```bash
+cp .env.example .env
+```
+
+Open the `.env` file in any text editor and fill in your values:
+
+```env
+TG_API_ID=12345678
+TG_API_HASH=your_api_hash_here
+TG_PHONE=+380123456789
+```
+
+### Step 4 — Log in to Telegram
+
+```bash
+tg-harvest auth login
+```
+
+Telegram will send a code to your Telegram app. Enter it when prompted. If you have 2FA enabled, enter your password too. **This only needs to be done once** — the session is saved locally.
+
+### Step 5 — Start using!
 
 ```bash
 # Web UI — recommended (all features in one place)
 tg-harvest web                # opens at http://localhost:8777
 
 # Or use the CLI directly
-tg-harvest channels list      # list your channels and get their IDs
+tg-harvest channels list      # list your channels, groups, bots
 tg-harvest parse @channel     # parse a public channel
+tg-harvest parse @some_bot    # parse a bot conversation
 tg-harvest parse -1001234567890  # parse a private channel by numeric ID
 tg-harvest search "keyword"   # search parsed data
 ```
@@ -34,22 +88,27 @@ tg-harvest search "keyword"   # search parsed data
 
 ---
 
-**Keywords:** telegram parser, telegram scraper, telegram channel export, telegram messages download, telegram analytics, telegram data extraction, telethon, telegram api, telegram backup, telegram archive, telegram channel statistics, telegram reactions, telegram views counter, restricted channel parser, private channel export, telegram to excel, telegram to csv, telegram to json, telegram content analysis, telegram monitoring tool
+**Keywords:** telegram parser, telegram scraper, telegram channel export, telegram messages download, telegram analytics, telegram data extraction, telethon, telegram api, telegram backup, telegram archive, telegram channel statistics, telegram reactions, telegram views counter, restricted channel parser, private channel export, telegram to excel, telegram to csv, telegram to json, telegram content analysis, telegram monitoring tool, telegram bot parser, telegram bot export, telegram private chat export
 
 ---
 
 ## Features
 
 - **Full MTProto access** — works at the protocol level, bypasses UI restrictions (copy-disabled channels)
-- **Private & restricted channels** — parse any channel or group you are a member of, regardless of copy restrictions
+- **Channels, groups, bots & private chats** — parse any dialog you have access to, including bot conversations and 1-to-1 chats
+- **Private & restricted channels** — parse even channels with copy restrictions disabled
 - **Rich data extraction** — messages, media, reactions, views, forwards, replies, entities
 - **Web UI** — Streamlit interface with EN/UK language switcher, per-page help guides, parsing, search, and analytics
 - **Message search** — full-text search across parsed data with filters
 - **Incremental parsing** — only fetch new messages since last parse
 - **Analytics** — message activity charts, top posts, reaction breakdown
 - **Flexible filtering** — by date range, message limit
-- **Multiple export formats** — JSON, CSV, Excel (.xlsx), or all at once
-- **Field selection** — choose which columns to export (id, text, date, views, etc.)
+- **Multiple export formats** — JSON, CSV, Excel (.xlsx), HTML report, or all at once
+- **HTML report** — self-contained single-file HTML with dark/light theme, sortable table, clickable message URLs
+- **Re-export** — convert already parsed JSON to CSV/XLSX/HTML without re-connecting to Telegram (`tg-harvest export`)
+- **File Manager** — browse, delete, and re-export parsed files from the web UI
+- **Field selection** — choose which columns to export (id, text, date, views, url, etc.)
+- **Direct message links** — each message includes a Telegram URL for quick navigation
 - **Beautiful CLI** — progress bars, colored output, summary tables
 - **Rate limiting** — respects Telegram API limits, auto-handles FloodWait errors
 - **CI/CD** — GitHub Actions, ruff linting, pre-commit hooks
@@ -150,10 +209,10 @@ tg-harvest auth status
 tg-harvest auth logout
 ```
 
-### List Channels
+### List Channels, Groups & Bots
 
 ```bash
-# Show all accessible channels and groups
+# Show all accessible channels, groups, bots, and private chats
 tg-harvest channels list
 
 # Limit number of dialogs to scan
@@ -165,6 +224,9 @@ tg-harvest channels list -l 200
 ```bash
 # Parse public channel by username
 tg-harvest parse @channel_name
+
+# Parse a bot conversation
+tg-harvest parse @bot_username
 
 # Parse private channel by numeric ID
 tg-harvest parse -1001234567890
@@ -184,7 +246,10 @@ tg-harvest parse @channel --format csv
 # Export to Excel (.xlsx)
 tg-harvest parse @channel --format xlsx
 
-# Export to all formats at once (JSON + CSV + XLSX)
+# Export to HTML report
+tg-harvest parse @channel --format html
+
+# Export to all formats at once (JSON + CSV + XLSX + HTML)
 tg-harvest parse @channel --format all
 
 # Export only selected fields
@@ -192,6 +257,18 @@ tg-harvest parse @channel --fields id,text,date,views
 
 # Custom output directory
 tg-harvest parse @channel -o ./my_data
+
+# Download media files (photos, videos, documents)
+tg-harvest parse @channel --download-media
+
+# Download media with size limit (MB)
+tg-harvest parse @channel --download-media --max-media-size 100
+
+# Resolve sender IDs to usernames and names
+tg-harvest parse @channel --enrich-senders
+
+# Fetch full reply threads (extra API calls)
+tg-harvest parse @channel --fetch-replies
 
 # Verbose mode (debug logging)
 tg-harvest -v parse @channel
@@ -219,6 +296,22 @@ tg-harvest search "update" --from-date 2024-01-01 --to-date 2024-06-30
 tg-harvest search "crypto" -n 100
 ```
 
+### Re-export
+
+```bash
+# Re-export parsed JSON to CSV (no Telegram connection needed)
+tg-harvest export output/channel_20240615.json --format csv
+
+# Re-export to HTML report
+tg-harvest export output/channel_20240615.json --format html
+
+# Re-export all JSON files in a directory
+tg-harvest export output/ --format all
+
+# With field selection
+tg-harvest export output/ --format xlsx --fields id,text,date,views,url
+```
+
 ### Web UI
 
 ```bash
@@ -231,10 +324,11 @@ tg-harvest web -p 9000
 
 The web UI provides:
 - **Auth Status** — step-by-step guide to get API credentials, check session, view config
-- **Channels** — browse all accessible channels; private channels show numeric IDs for copying
-- **Parse** — parse by username or numeric ID, date pickers, incremental mode, progress bar, download buttons
+- **Channels** — browse all accessible channels, groups, bots, and private chats; shows types and numeric IDs for copying
+- **Parse** — parse any dialog by username or numeric ID, date pickers, incremental mode, progress bar, download buttons
 - **Search** — full-text search with filters (media type, views, reactions, date range, channel)
-- **Analytics** — interactive charts: messages per day, hourly activity, top posts by views/reactions, media distribution, reaction breakdown
+- **Analytics** — interactive charts: messages per day/week/month, hourly activity, top posts by views/reactions/forwards, media distribution, reaction breakdown, engagement rate, word frequency
+- **Files** — file manager to browse, delete, and re-export parsed output files
 - **Language switcher** — English / Українська (sidebar)
 
 Each page has a collapsible **Tips / Підказки** section with usage hints.
@@ -290,7 +384,7 @@ src/tg_harvest/
   models/       Pydantic data models
   client/       Telegram session, rate limiter
   parsers/      Message/media/channel parsing
-  exporters/    JSON, CSV, Excel export (with field selection)
+  exporters/    JSON, CSV, Excel, HTML export (with field selection)
   storage/      Incremental parsing state
   search/       Search engine
   analytics/    Statistics and analytics
@@ -370,50 +464,109 @@ MIT
 
 [![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
 
-Інструмент для збору даних з Telegram-каналів і чатів через MTProto API.
+Інструмент для збору даних з Telegram — каналів, груп, ботів і приватних чатів через MTProto API.
+
+Витягує повідомлення, метадані медіа, реакції, перегляди, репости з будь-якого діалогу, до якого ви маєте доступ — включно з каналами з вимкненим копіюванням.
 
 ## Швидкий старт
+
+> **Не потрібно вміти програмувати!** Просто виконуйте команди одну за одною в терміналі (Командний рядок на Windows, Термінал на Mac/Linux).
+
+### Крок 0 — Встановіть Python
+
+Потрібен Python 3.11 або новіший. Перевірте, чи він у вас є:
+
+```bash
+python --version
+```
+
+Якщо показує `Python 3.11` або вище — все добре. Якщо ні, завантажте Python з [python.org/downloads](https://www.python.org/downloads/) і встановіть. **На Windows обов'язково поставте галочку "Add Python to PATH" під час встановлення.**
+
+### Крок 1 — Завантажте і встановіть TG Harvest
+
+Відкрийте термінал і виконайте ці команди по черзі:
 
 ```bash
 git clone https://github.com/klivak/tg-harvest.git
 cd tg-harvest
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e .
-cp .env.example .env          # вписати TG_API_ID, TG_API_HASH, TG_PHONE
-tg-harvest auth login         # одноразовий вхід: введіть код з вашого Telegram
+python -m venv .venv
 ```
 
-Після входу сесія зберігається локально. Все інше можна робити через **веб-інтерфейс** або CLI:
+Активуйте віртуальне середовище:
+- **Windows:** `.venv\Scripts\activate`
+- **Mac/Linux:** `source .venv/bin/activate`
+
+Потім встановіть:
+
+```bash
+pip install -e .
+```
+
+### Крок 2 — Отримайте API-ключі Telegram
+
+1. Перейдіть на [my.telegram.org/apps](https://my.telegram.org/apps) у браузері
+2. Увійдіть за номером телефону (тим, що прив'язаний до вашого Telegram)
+3. Натисніть **API development tools**
+4. Вкажіть будь-яку назву додатку (наприклад `tg-harvest`) і коротку назву (наприклад `harvest`)
+5. З'являться **App api_id** (число) і **App api_hash** (довгий рядок) — скопіюйте їх
+
+### Крок 3 — Налаштуйте
+
+```bash
+cp .env.example .env
+```
+
+Відкрийте файл `.env` у будь-якому текстовому редакторі і впишіть ваші значення:
+
+```env
+TG_API_ID=12345678
+TG_API_HASH=ваш_api_hash
+TG_PHONE=+380501234567
+```
+
+### Крок 4 — Увійдіть у Telegram
+
+```bash
+tg-harvest auth login
+```
+
+Telegram надішле код підтвердження у ваш додаток Telegram. Введіть його, коли програма попросить. Якщо у вас увімкнена 2FA, введіть також пароль. **Це потрібно зробити лише один раз** — сесія зберігається локально.
+
+### Крок 5 — Користуйтеся!
 
 ```bash
 # Веб-інтерфейс — рекомендовано (всі функції в одному місці)
 tg-harvest web                # відкривається на http://localhost:8777
 
 # Або через CLI напряму
-tg-harvest channels list      # список каналів та їхні ID
+tg-harvest channels list      # список каналів, груп, ботів
 tg-harvest parse @channel     # парсити публічний канал
+tg-harvest parse @some_bot    # парсити бота
 tg-harvest parse -1001234567890  # парсити приватний канал за числовим ID
 tg-harvest search "ключове слово"  # пошук по розпарсених даних
 ```
 
 > **Важливо:** `tg-harvest auth login` потрібно запустити один раз у терміналі — програма надішле код підтвердження у ваш Telegram-додаток, який треба ввести. Після цього сесія зберігається і веб-інтерфейс працює без будь-яких додаткових дій у терміналі.
 
-Витягує повідомлення, метадані медіа, реакції, перегляди, репости з будь-якого каналу, учасником якого ви є — включно з каналами з вимкненим копіюванням.
-
 ---
 
 ## Можливості
 
 - **Повний доступ через MTProto** — працює на рівні протоколу, обходить UI-обмеження (канали із забороною копіювання)
-- **Приватні та обмежені канали** — парсить будь-який канал або групу, учасником якої ви є
+- **Канали, групи, боти та приватні чати** — парсить будь-який діалог, до якого ви маєте доступ, включно з ботами та особистими чатами
+- **Приватні та обмежені канали** — парсить навіть канали з вимкненим копіюванням
 - **Повна витяжка даних** — повідомлення, медіа, реакції, перегляди, репости, відповіді
 - **Веб-інтерфейс** — Streamlit з перемикачем мов EN/UK, покроковими підказками, парсингом, пошуком та аналітикою
 - **Пошук по повідомленнях** — повнотекстовий пошук із фільтрами
 - **Інкрементальний парсинг** — завантажує лише нові повідомлення з моменту останнього запуску
 - **Аналітика** — графіки активності, топ-пости, розбивка реакцій
 - **Гнучка фільтрація** — за датою, лімітом повідомлень
-- **Формати експорту** — JSON, CSV, Excel (.xlsx) або всі одразу
-- **Вибір полів** — оберіть колонки для експорту (id, text, date, views тощо)
+- **Формати експорту** — JSON, CSV, Excel (.xlsx), HTML-звіт або всі одразу
+- **HTML-звіт** — самодостатній HTML-файл з темною/світлою темою, сортувальною таблицею, посиланнями на повідомлення
+- **Переекспорт** — конвертація вже розпарсеного JSON у CSV/XLSX/HTML без підключення до Telegram (`tg-harvest export`)
+- **Менеджер файлів** — перегляд, видалення та переекспорт файлів прямо з веб-інтерфейсу
+- **Вибір полів** — оберіть колонки для експорту (id, text, date, views, url тощо)
+- **Прямі посилання** — кожне повідомлення містить URL для швидкого переходу в Telegram
 - **Зручний CLI** — прогрес-бари, кольоровий вивід, зведені таблиці
 - **Rate limiting** — дотримується лімітів API, автоматично обробляє FloodWait
 
@@ -513,10 +666,10 @@ tg-harvest auth status
 tg-harvest auth logout
 ```
 
-### Список каналів
+### Список каналів, груп і ботів
 
 ```bash
-# Показати всі доступні канали та групи
+# Показати всі доступні канали, групи, ботів та приватні чати
 tg-harvest channels list
 
 # Обмежити кількість діалогів для сканування
@@ -528,6 +681,9 @@ tg-harvest channels list -l 200
 ```bash
 # Парсинг публічного каналу за юзернеймом
 tg-harvest parse @channel_name
+
+# Парсинг бота
+tg-harvest parse @bot_username
 
 # Парсинг приватного каналу за числовим ID
 tg-harvest parse -1001234567890
@@ -547,7 +703,10 @@ tg-harvest parse @channel --format csv
 # Експорт у Excel (.xlsx)
 tg-harvest parse @channel --format xlsx
 
-# Експорт у всі формати одразу (JSON + CSV + XLSX)
+# Експорт у HTML-звіт
+tg-harvest parse @channel --format html
+
+# Експорт у всі формати одразу (JSON + CSV + XLSX + HTML)
 tg-harvest parse @channel --format all
 
 # Тільки вибрані поля
@@ -555,6 +714,18 @@ tg-harvest parse @channel --fields id,text,date,views
 
 # Своя директорія виводу
 tg-harvest parse @channel -o ./my_data
+
+# Завантажити медіа (фото, відео, документи)
+tg-harvest parse @channel --download-media
+
+# Завантажити медіа з лімітом розміру (МБ)
+tg-harvest parse @channel --download-media --max-media-size 100
+
+# Розшифрувати ID відправників у юзернейми та імена
+tg-harvest parse @channel --enrich-senders
+
+# Завантажити повні гілки відповідей (додаткові API-запити)
+tg-harvest parse @channel --fetch-replies
 ```
 
 ### Пошук
@@ -576,6 +747,22 @@ tg-harvest search "оголошення" --has-reactions
 tg-harvest search "оновлення" --from-date 2024-01-01 --to-date 2024-06-30
 ```
 
+### Переекспорт
+
+```bash
+# Переекспорт розпарсеного JSON у CSV (без підключення до Telegram)
+tg-harvest export output/channel_20240615.json --format csv
+
+# Переекспорт у HTML-звіт
+tg-harvest export output/channel_20240615.json --format html
+
+# Переекспорт усіх JSON-файлів у директорії
+tg-harvest export output/ --format all
+
+# З вибором полів
+tg-harvest export output/ --format xlsx --fields id,text,date,views,url
+```
+
 ### Веб-інтерфейс
 
 ```bash
@@ -588,10 +775,11 @@ tg-harvest web -p 9000
 
 Веб-інтерфейс містить:
 - **Авторизація** — покрокова інструкція з отримання API-ключів, перевірка сесії
-- **Канали** — перегляд усіх доступних каналів; приватні канали показують числовий ID для копіювання
-- **Парсинг** — парсинг за юзернеймом або числовим ID, вибір дат, інкрементальний режим, прогрес-бар, кнопки завантаження
+- **Канали** — перегляд усіх доступних каналів, груп, ботів та приватних чатів; показує типи та числові ID для копіювання
+- **Парсинг** — парсинг будь-якого діалогу за юзернеймом або числовим ID, вибір дат, інкрементальний режим, прогрес-бар, кнопки завантаження
 - **Пошук** — повнотекстовий пошук із фільтрами (тип медіа, перегляди, реакції, дата, канал)
-- **Аналітика** — інтерактивні графіки: повідомлень на день, активність по годинах, топ-пости, розподіл медіа, реакції
+- **Аналітика** — інтерактивні графіки: повідомлень на день/тиждень/місяць, активність по годинах, топ-пости за переглядами/реакціями/репостами, розподіл медіа, реакції, залученість, частотність слів
+- **Файли** — менеджер файлів для перегляду, видалення та переекспорту розпарсених даних
 - **Перемикач мови** — English / Українська (бічна панель)
 
 На кожній сторінці є розділ **Підказки** з поясненнями.
@@ -647,7 +835,7 @@ src/tg_harvest/
   models/       Pydantic-моделі даних
   client/       Telegram-сесія, rate limiter
   parsers/      Парсинг повідомлень, медіа, каналів
-  exporters/    Експорт JSON, CSV, Excel
+  exporters/    Експорт JSON, CSV, Excel, HTML
   storage/      Стан інкрементального парсингу
   search/       Пошуковий рушій
   analytics/    Статистика та аналітика

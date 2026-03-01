@@ -93,3 +93,40 @@ class TestParsedMessage:
         )
         assert msg.is_edited is True
         assert msg.edit_date is not None
+
+    def test_url_with_username(self):
+        msg = ParsedMessage(
+            id=1,
+            channel_id=987654321,
+            channel_username="test_ch",
+            date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        assert msg.url == "https://t.me/test_ch/1"
+
+    def test_url_without_username(self):
+        msg = ParsedMessage(
+            id=42,
+            channel_id=123456789,
+            date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        assert msg.url.startswith("https://t.me/c/")
+        assert "42" in msg.url
+
+    def test_url_in_serialization(self):
+        msg = ParsedMessage(
+            id=5,
+            channel_id=111,
+            channel_username="my_chan",
+            date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        data = msg.model_dump(mode="json")
+        assert "url" in data
+        assert data["url"] == "https://t.me/my_chan/5"
+
+    def test_channel_username_field(self):
+        msg = ParsedMessage(
+            id=1,
+            channel_id=123,
+            date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        assert msg.channel_username is None

@@ -14,12 +14,15 @@ from tg_harvest.config import Settings
 from tg_harvest.config.constants import (
     ALL_EXPORT_FIELDS,
     DEFAULT_EXPORT_FORMAT,
+    DEFAULT_MAX_MEDIA_SIZE_MB,
     SUPPORTED_FORMATS,
 )
 from tg_harvest.exporters.csv_exporter import CsvExporter
+from tg_harvest.exporters.html_exporter import HtmlExporter
 from tg_harvest.exporters.json_exporter import JsonExporter
 from tg_harvest.exporters.xlsx_exporter import XlsxExporter
 from tg_harvest.parsers.channel_parser import ChannelParser
+from tg_harvest.parsers.parse_options import ParseOptions
 from tg_harvest.storage.state import StateManager
 from tg_harvest.utils.date_utils import parse_date
 
@@ -79,6 +82,37 @@ console = Console()
         "Default: all fields."
     ),
 )
+@click.option(
+    "--download-media",
+    is_flag=True,
+    default=False,
+    help="Download media files (photos, videos, documents) during parsing.",
+)
+@click.option(
+    "--max-media-size",
+    default=DEFAULT_MAX_MEDIA_SIZE_MB,
+    type=int,
+    help="Max media file size in MB.",
+    show_default=True,
+)
+@click.option(
+    "--media-dir",
+    default=None,
+    type=click.Path(),
+    help="Directory for downloaded media (default: output/media/<channel>).",
+)
+@click.option(
+    "--fetch-replies",
+    is_flag=True,
+    default=False,
+    help="Fetch full reply thread messages (extra API calls).",
+)
+@click.option(
+    "--enrich-senders",
+    is_flag=True,
+    default=False,
+    help="Resolve sender IDs to usernames and names.",
+)
 def parse(
     channel: str,
     from_date: str | None,
@@ -88,10 +122,15 @@ def parse(
     output_dir: str | None,
     incremental: bool,
     fields: str | None,
+    download_media: bool,
+    max_media_size: int,
+    media_dir: str | None,
+    fetch_replies: bool,
+    enrich_senders: bool,
 ):
-    """Parse messages from a Telegram channel or group.
+    """Parse messages from a Telegram channel, group, bot, or private chat.
 
-    CHANNEL can be a username (@channel), invite link, or numeric ID.
+    CHANNEL can be a username (@channel or @bot), invite link, or numeric ID.
     """
     # Parse fields option
     field_list = None
@@ -104,9 +143,25 @@ def parse(
                 param_hint="--fields",
             )
 
+    options = ParseOptions(
+        download_media=download_media,
+        max_media_size_mb=max_media_size,
+        media_output_dir=Path(media_dir) if media_dir else None,
+        fetch_replies=fetch_replies,
+        enrich_senders=enrich_senders,
+    )
+
     asyncio.run(
         _parse_async(
-            channel, from_date, to_date, limit, export_format, output_dir, incremental, field_list
+            channel,
+            from_date,
+            to_date,
+            limit,
+            export_format,
+            output_dir,
+            incremental,
+            field_list,
+            options,
         )
     )
 
@@ -120,19 +175,16 @@ async def _parse_async(
     output_dir: str | None,
     incremental: bool,
     fields: list[str] | None,
+    options: ParseOptions,
 ):
     settings = Settings()
+    # Reject path traversal
+    if output_dir and ".." in Path(output_dir).parts:
+        raise click.BadParameter(
+            "Output directory must not contain '..' path components.",
+            param_hint="-o/--output",
+        )
     out_path = Path(output_dir).resolve() if output_dir else settings.output_dir.resolve()
-
-    # Prevent path traversal: output must stay within the project output dir
-    allowed_root = settings.output_dir.resolve()
-    if not (out_path == allowed_root or str(out_path).startswith(str(allowed_root))):
-        # Allow any absolute path explicitly set by CLI — only warn on suspicious traversal
-        if ".." in Path(output_dir).parts if output_dir else False:
-            raise click.BadParameter(
-                "Output directory must not contain '..' path components.",
-                param_hint="-o/--output",
-            )
 
     from_date = parse_date(from_date_str) if from_date_str else None
     to_date = parse_date(to_date_str) if to_date_str else None
@@ -178,6 +230,7 @@ async def _parse_async(
                 limit=limit,
                 min_id=min_id,
                 on_progress=on_progress,
+                options=options,
             )
 
         # Update incremental state
@@ -188,6 +241,20 @@ async def _parse_async(
         if not result.messages:
             console.print("[yellow]No messages found for the given criteria.[/yellow]")
             return
+
+        # Show download stats
+        if result.download_stats and result.download_stats.total_files > 0:
+            ds = result.download_stats
+            size_mb = ds.total_bytes / 1024 / 1024
+            console.print(
+                f"[green]Downloaded {ds.total_files} media files ({size_mb:.1f} MB)[/green]"
+            )
+            if ds.skipped_size_limit:
+                console.print(f"[dim]Skipped {ds.skipped_size_limit} files (size limit)[/dim]")
+            if ds.skipped_existing:
+                console.print(f"[dim]Skipped {ds.skipped_existing} files (already exist)[/dim]")
+            if ds.failed:
+                console.print(f"[yellow]Failed to download {ds.failed} files[/yellow]")
 
         # Export
         output_files: list[str] = []
@@ -202,6 +269,10 @@ async def _parse_async(
 
         if export_format in ("xlsx", "all"):
             path = await XlsxExporter(fields).export(result, out_path)
+            output_files.append(str(path))
+
+        if export_format in ("html", "all"):
+            path = await HtmlExporter(fields).export(result, out_path)
             output_files.append(str(path))
 
         print_parse_summary(result, output_files)

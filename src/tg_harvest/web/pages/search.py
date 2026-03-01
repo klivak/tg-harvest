@@ -48,20 +48,19 @@ def render():
     # Search form
     query = st.text_input(t("search.query_label"), placeholder=t("search.query_placeholder"))
 
-    # Filters
-    with st.expander(t("search.filters_expander"), expanded=False):
-        col1, col2 = st.columns(2)
-        with col1:
-            media_options = [t("search.filter_media_any")] + [
-                mt.value for mt in MediaType if mt != MediaType.NONE
-            ]
-            media_type = st.selectbox(t("search.filter_media_label"), media_options)
-            min_views = st.number_input(t("search.filter_min_views"), min_value=0, value=0)
-        with col2:
-            has_reactions = st.checkbox(t("search.filter_has_reactions"))
-            from_date = st.date_input(t("search.filter_from_date"), value=None, key="search_from")
-            to_date = st.date_input(t("search.filter_to_date"), value=None, key="search_to")
-
+    # Filters — always visible
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        media_options = [t("search.filter_media_any")] + [
+            mt.value for mt in MediaType if mt != MediaType.NONE
+        ]
+        media_type = st.selectbox(t("search.filter_media_label"), media_options)
+        min_views = st.number_input(t("search.filter_min_views"), min_value=0, value=0)
+    with col2:
+        has_reactions = st.checkbox(t("search.filter_has_reactions"))
+        from_date = st.date_input(t("search.filter_from_date"), value=None, key="search_from")
+        to_date = st.date_input(t("search.filter_to_date"), value=None, key="search_to")
+    with col3:
         # Channel filter — dedup by ID to avoid losing channels with identical names
         unique: dict[int, str] = {}
         for r in results:
@@ -76,7 +75,9 @@ def render():
         channel_options = [t("search.filter_channel_all")] + list(name_to_id.keys())
         selected_channel = st.selectbox(t("search.filter_channel_label"), channel_options)
 
-    if not query and not st.button(t("search.search_button"), type="primary"):
+    search_clicked = st.button(t("search.search_button"), type="primary")
+
+    if not query and not search_clicked:
         st.info(t("search.empty_state_info"))
         return
 

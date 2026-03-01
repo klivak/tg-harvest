@@ -156,3 +156,50 @@ class TestChannelStats:
         assert stats.avg_reactions() == 0.0
         assert stats.forwarded_count() == 0
         assert stats.edited_count() == 0
+
+    @pytest.fixture
+    def empty_stats(self):
+        channel = ChannelInfo(id=1, title="Empty")
+        result = ParseResult(
+            channel=channel,
+            messages=[],
+            parsed_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        return ChannelStats(result)
+
+    def test_messages_per_week(self, rich_result):
+        stats = ChannelStats(rich_result)
+        per_week = stats.messages_per_week()
+        assert isinstance(per_week, dict)
+        assert all(isinstance(k, str) for k in per_week.keys())
+        assert all(isinstance(v, int) for v in per_week.values())
+
+    def test_messages_per_month(self, rich_result):
+        stats = ChannelStats(rich_result)
+        per_month = stats.messages_per_month()
+        assert "2024-06" in per_month
+
+    def test_top_by_forwards(self, rich_result):
+        stats = ChannelStats(rich_result)
+        top = stats.top_by_forwards()
+        # Only message id=1 has forwards=10; others have None
+        assert len(top) == 1
+        assert top[0].forwards == 10
+
+    def test_engagement_rate(self, rich_result):
+        stats = ChannelStats(rich_result)
+        rate = stats.engagement_rate()
+        assert isinstance(rate, float)
+        assert rate >= 0
+
+    def test_avg_message_length(self, rich_result):
+        stats = ChannelStats(rich_result)
+        avg_len = stats.avg_message_length()
+        assert isinstance(avg_len, float)
+        assert avg_len > 0
+
+    def test_empty_engagement_rate(self, empty_stats):
+        assert empty_stats.engagement_rate() == 0.0
+
+    def test_empty_avg_message_length(self, empty_stats):
+        assert empty_stats.avg_message_length() == 0.0

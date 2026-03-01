@@ -5,6 +5,156 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-03-01
+
+### Fixed
+
+- **Security**: path traversal check in CLI `parse --output` and web parser (replaced broken
+  string prefix matching with proper `..` component rejection)
+- **Security**: media filename sanitization in `MediaDownloader` — strip directory components
+  and null bytes from Telegram-provided filenames to prevent path traversal
+- **Bug**: swallowed exceptions in file manager `_scan_files()` — replaced bare
+  `except: pass` with specific exception types and debug logging
+
+### Changed
+
+- Refactored `_render_single()` in analytics page (254→120 lines) — extracted
+  `_render_top_table()` and `_render_word_frequency()` helpers
+- Extracted `_build_user_info()` / `_build_channel_info()` helpers in `channel_parser.py`
+  to eliminate ~40 lines of duplicated entity construction code
+- Reduced parameter count in web `_do_parse` (13→10) and `_parse_async` (15→12) by
+  grouping extended options into `ParseOptions` object
+- Replaced broad `except Exception` with specific exception types (`ValueError`,
+  `KeyError`, `TypeError`, `json.JSONDecodeError`, `ImportError`) across web pages
+- Extracted 6 magic numbers to `constants.py`: `MIN_WORD_LENGTH`, `TOP_WORDS_COUNT`,
+  `TOP_REACTIONS_DISPLAY`, `DEFAULT_TRUNCATE_LENGTH`, `PREVIEW_TRUNCATE_LENGTH`,
+  `DEFAULT_DIALOG_LIMIT`
+
+## [0.9.0] - 2026-03-01
+
+### Added
+
+- **Media download** (`--download-media`): download photos, videos, documents, audio,
+  voice messages during parsing via `client.download_media()`; files organized into
+  `photos/`, `videos/`, `docs/`, `audio/`, `voice/` subdirectories
+  - `--max-media-size` flag (default 50 MB) to skip large files
+  - `--media-dir` flag to specify download directory
+  - Resume support: existing files are skipped automatically
+  - Download stats (files, bytes, skipped, failed) shown in CLI summary
+- **Sender enrichment** (`--enrich-senders`): resolve `sender_id` to username,
+  first/last name via Telegram API; results cached in `.users_cache.json` to avoid
+  repeated API calls; batch fetching for efficiency
+- **Reply thread analytics**: `thread_stats()` and `top_threads()` methods in
+  `ChannelStats`; thread metrics (total threads, avg/max replies) displayed on
+  Analytics page; `reply_to_top_id` now exported in all formats
+- **Reply thread fetching** (`--fetch-replies`): optionally fetch full reply messages
+  for thread-starting posts (extra API calls, opt-in)
+- `SenderInfo` model with `display_name` computed field
+- `DownloadStats` model for tracking download results
+- `ParseOptions` dataclass for extended parsing behavior
+- `MediaDownloader` class for file downloads with rate limiting
+- `SenderEnricher` class for batch user resolution
+- `UserCache` storage class (follows `StateManager` pattern)
+- 5 new export fields: `reply_to_top_id`, `sender_username`, `sender_name`,
+  `sender_is_bot`, `media_local_path`
+- `MediaInfo.local_path` field for downloaded file paths
+- Web UI: 3 new checkboxes in parser (Download media, Fetch replies, Enrich senders)
+  with max media size slider
+- Web Analytics: "Reply Threads" section with metrics and top threads table
+- i18n: 12 new translation keys in both `en.json` and `uk.json`
+- 55 new tests (603 total)
+
+### Changed
+
+- `ChannelParser.parse()` now accepts optional `ParseOptions` parameter
+- `ALL_EXPORT_FIELDS` expanded from 21 to 26 fields
+- `build_row()` extended with 5 new field extractions
+
+## [0.8.0] - 2026-03-01
+
+### Added
+
+- **Bot & private chat support**: parse messages from Telegram bots (`@bot_username`)
+  and 1-to-1 private chats, not just channels and groups
+- `ChannelInfo.is_bot` field to distinguish bot conversations in listings and exports
+- `types.User` entity handling in `ChannelParser.list_channels()` and
+  `ChannelParser.get_channel_info()` — bots and users now appear alongside
+  channels and groups
+- Web UI — "Bot" and "Private Chat" type labels in Channels table (EN + UK)
+- 5 new tests for bot/user entity parsing (548 total)
+- Beginner-friendly README: step-by-step installation guide for non-programmers,
+  with numbered steps (0–5), Python install instructions, and "no programming
+  knowledge needed" note (both EN and UK sections)
+
+### Changed
+
+- `list_channels()` no longer filters out `types.User` entities — all dialog
+  types are now returned (channels, supergroups, basic groups, bots, private chats)
+- Web UI page headers updated: "Channels & Groups" → "Channels, Groups & Bots",
+  "Parse Channel" → "Parse Messages" (both EN and UK locales)
+- CLI `parse` command help updated to mention bots and private chats
+- i18n: 4 new translation keys (`channels.type_bot`, `channels.type_user`)
+  in both `en.json` and `uk.json`; several existing keys updated to use
+  "dialogs" instead of "channels/groups"
+
+## [0.7.0] - 2026-02-27
+
+### Added
+
+- **HTML exporter** (`--format html`): self-contained single-file HTML report with
+  embedded CSS/JS, dark/light theme toggle, sortable/filterable messages table,
+  emoji reaction badges, media type icons, clickable message URLs
+- **CLI `tg-harvest export` command**: re-export already parsed JSON files to
+  CSV, XLSX, or HTML without re-connecting to Telegram; supports single file
+  or directory batch mode, field selection (`--fields`)
+- **Web — File Manager page** (`📁 Files`): browse all parsed output files
+  (JSON/CSV/XLSX/HTML), view file size/channel/message count, re-export JSON
+  to other formats, delete files — all from the web UI
+- **Message URL field**: `ParsedMessage.url` computed field generates a direct
+  Telegram link (`https://t.me/{username}/{id}` for public channels,
+  `https://t.me/c/{channel_id}/{id}` for private); appears in all exports
+- **Poll answers**: `MediaInfo.poll_answers` captures poll answer options and
+  voter counts from `MessageMediaPoll`
+- **Geo coordinates**: `MediaInfo.latitude` / `MediaInfo.longitude` extracted
+  from `MessageMediaGeo` and `MessageMediaGeoLive`
+- **Contact details**: `MediaInfo.contact_name` / `MediaInfo.contact_phone`
+  extracted from `MessageMediaContact`
+- **Analytics — weekly/monthly aggregation**: toggle between Day / Week / Month
+  view for the message activity chart
+- **Analytics — engagement rate**: avg reactions/views ratio metric
+- **Analytics — avg message length**: average text length metric
+- **Analytics — top by forwards**: new table alongside top by views/reactions
+- **Analytics — word frequency**: top-20 words bar chart
+- 39 new tests (543 total)
+
+### Changed
+
+- `SUPPORTED_FORMATS` updated: `("json", "csv", "xlsx", "html", "all")`
+- `ALL_EXPORT_FIELDS` now includes `"url"` field
+- Parser page download section expanded from 3 to 4 buttons (+ HTML)
+- Analytics summary expanded from 6 to 9 metrics (3+3+3 layout)
+- i18n: ~35 new translation keys in both `en.json` and `uk.json`
+
+## [0.6.1] - 2026-02-21
+
+### Changed
+
+- **Web — Parser page UX**: date range and message limit controls moved out of the
+  "Advanced options" expander and are now always visible
+- **Web — Parser page**: added quick-preset buttons — **Test (100)**, **Last year**,
+  **Last 2 years**, **Last 3 years**, **All time** — that set date range and limit in
+  one click; presets update date inputs and limit widget via session state
+- **Web — Parser page**: disabled Parse button now shows an explanatory warning when
+  no fields are selected; progress counter updates on every message when `limit=0`
+- **Web — Search page**: filters (media type, views, date range, channel) moved out
+  of collapsed expander and are always visible in a 3-column layout; Search button
+  logic fixed — results show when query is typed OR button is clicked
+- **Web — Channels page**: "Max dialogs" slider moved from sidebar to main content
+  area, placed inline next to the Load button so it's discoverable
+- **Web — Analytics page**: "Activity by Hour" chart now guarded against empty data;
+  added CSV download button for the by-hour chart (consistent with per-day chart)
+- **Web — App sidebar**: navigation radio label is now visible
+
 ## [0.6.0] - 2026-02-19
 
 ### Added
