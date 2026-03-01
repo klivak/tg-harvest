@@ -544,7 +544,7 @@ def _show_result(result_data: dict, output_files: list[str]):
             size = _format_size(f)
             st.code(f"{f}  ({size})" if size else f)
 
-    base_name = result_data["channel"].get("username", result_data["channel"]["id"])
+    base_name = result_data["channel"].get("username") or str(result_data["channel"]["id"])
 
     # Split selector — only affects downloads, no re-parsing needed
     split_col1, split_col2 = st.columns([1, 3])
