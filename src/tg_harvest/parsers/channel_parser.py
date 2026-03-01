@@ -163,8 +163,6 @@ class ChannelParser:
             iter_kwargs["min_id"] = min_id
 
         async for msg in self._client.iter_messages(**iter_kwargs):
-            await self._rate_limiter.wait()
-
             # Stop if message is older than from_date
             if from_date and msg.date and msg.date < from_date:
                 break
@@ -243,7 +241,6 @@ class ChannelParser:
         for top_id in top_ids:
             try:
                 async for msg in self._client.iter_messages(channel, reply_to=top_id):
-                    await self._rate_limiter.wait()
                     if msg.id in existing_ids:
                         continue
                     parsed = parse_message(msg, channel_info.id, channel_info.username)

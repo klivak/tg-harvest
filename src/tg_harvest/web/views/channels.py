@@ -32,7 +32,7 @@ def render():
 
     col_btn, col_limit = st.columns([2, 3])
     with col_limit:
-        limit = st.slider(t("channels.sidebar_slider"), 10, 500, 100)
+        limit = st.slider(t("channels.sidebar_slider"), 10, 500, 25)
     with col_btn:
         load_clicked = st.button(t("channels.load_button"), type="primary", width="stretch")
 

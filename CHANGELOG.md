@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-03-01
+
+### Added
+
+- **Channel selector on parser page**: selectbox with previously loaded channels instead of manual ID/username input; fallback to text input with hint
+- **Date preset buttons**: added Week, Month, This year presets; active preset now highlighted
+- **Navigation guard**: modal dialog warns when navigating away from parser during active parsing to prevent data loss
+
+### Changed
+
+- **Parsing speed**: removed per-message rate limiter from `iter_messages` loops and set `wait_time=0` — Telethon handles flood protection via `flood_sleep_threshold`; ~100x faster for text-only parses
+- **Channels default limit**: reduced default "Max dialogs to scan" from 100 to 25
+- **TXT export**: removed blank lines between text blocks (`\n` instead of `\n\n`)
+
 ## [0.10.0] - 2026-03-01
 
 ### Added

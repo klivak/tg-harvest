@@ -19,8 +19,8 @@ class TestTelegramConstants:
     def test_max_messages_per_request_positive(self):
         assert MAX_MESSAGES_PER_REQUEST > 0
 
-    def test_default_iter_wait_time_positive(self):
-        assert DEFAULT_ITER_WAIT_TIME > 0
+    def test_default_iter_wait_time_non_negative(self):
+        assert DEFAULT_ITER_WAIT_TIME >= 0
 
 
 class TestExportConstants:

@@ -130,6 +130,26 @@ if __name__ == "__main__" or st.runtime.exists():
     st.sidebar.caption(t("app.workflow_caption"))
     st.sidebar.caption(f"v{__version__}")
 
+    # Guard: warn if navigating away from parser while parsing is active
+    parse_page = t("app.page_parse")
+    if st.session_state.get("parsing_active") and page != parse_page:
+
+        @st.dialog(t("app.nav_guard_title"))
+        def _nav_guard():
+            st.warning(t("app.nav_guard_warning"))
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(t("app.nav_guard_stay"), type="primary", use_container_width=True):
+                    st.session_state[nav_key] = parse_page
+                    st.rerun()
+            with col2:
+                if st.button(t("app.nav_guard_leave"), use_container_width=True):
+                    st.session_state["parsing_active"] = False
+                    st.rerun()
+
+        _nav_guard()
+        st.stop()
+
     if page == t("app.page_auth"):
         from tg_harvest.web.views.auth import render
 

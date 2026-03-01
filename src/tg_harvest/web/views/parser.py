@@ -31,13 +31,55 @@ def render():
     with st.expander(t("parser.tips_expander"), expanded=False):
         st.markdown(t("parser.tips_body"))
 
-    # Channel input — supports prefill from Channels page
+    # Channel input — selectbox from loaded channels, or manual text input
     prefill = st.session_state.pop("prefill_channel", "")
-    channel = st.text_input(
-        t("parser.channel_label"),
-        value=prefill,
-        placeholder=t("parser.channel_placeholder"),
-    )
+    loaded_channels = st.session_state.get("channels", [])
+
+    if loaded_channels:
+        # Build options: "Title (@username)" -> "@username" or "Title (ID: 123)" -> "123"
+        channel_options: dict[str, str] = {}
+        for c in loaded_channels:
+            ch_title = c["title"]
+            ch_username = c["username"]
+            ch_id = c["id"]
+            if ch_username:
+                label = f"{ch_title} (@{ch_username})"
+                value = f"@{ch_username}"
+            else:
+                label = f"{ch_title} (ID: {ch_id})"
+                value = str(ch_id)
+            channel_options[label] = value
+
+        manual_mode = st.checkbox(t("parser.channel_manual_toggle"))
+
+        if manual_mode:
+            channel = st.text_input(
+                t("parser.channel_manual_label"),
+                value=prefill,
+                placeholder=t("parser.channel_placeholder"),
+            )
+        else:
+            labels = list(channel_options.keys())
+            # If prefilled, find matching index
+            default_idx = 0
+            if prefill:
+                for i, lbl in enumerate(labels):
+                    if channel_options[lbl] == prefill:
+                        default_idx = i
+                        break
+            selected_label = st.selectbox(
+                t("parser.channel_select_label"),
+                labels,
+                index=default_idx,
+            )
+            channel = channel_options[selected_label]
+    else:
+        channel = st.text_input(
+            t("parser.channel_label"),
+            value=prefill,
+            placeholder=t("parser.channel_placeholder"),
+        )
+        st.caption(t("parser.channel_load_hint"))
 
     # Quick options on one line
     col1, col2 = st.columns(2)
@@ -55,20 +97,27 @@ def render():
     st.markdown(t("parser.date_range_label"))
 
     today = date.today()
-    preset_cols = st.columns(5)
+    year_start = date(today.year, 1, 1)
+    preset_cols = st.columns(8)
     presets = [
         ("parser.preset_100", None, None, 100),
+        ("parser.preset_1w", today - timedelta(weeks=1), today, 0),
+        ("parser.preset_1m", today - timedelta(days=30), today, 0),
+        ("parser.preset_ytd", year_start, today, 0),
         ("parser.preset_1y", today - timedelta(days=365), today, 0),
         ("parser.preset_2y", today - timedelta(days=730), today, 0),
         ("parser.preset_3y", today - timedelta(days=1095), today, 0),
         ("parser.preset_all", None, None, 0),
     ]
+    active_preset = st.session_state.get("active_preset")
     for i, (label_key, fd, td, lim) in enumerate(presets):
         with preset_cols[i]:
-            if st.button(t(label_key), width="stretch"):
+            btn_type = "primary" if active_preset == i else "secondary"
+            if st.button(t(label_key), width="stretch", type=btn_type):
                 st.session_state["from_date_input"] = fd
                 st.session_state["to_date_input"] = td
                 st.session_state["limit_input"] = lim
+                st.session_state["active_preset"] = i
                 st.rerun()
 
     date_col1, date_col2, date_col3 = st.columns(3)
@@ -196,51 +245,57 @@ def _do_parse(
     fields,
     options: ParseOptions,
 ):
-    with st.status(t("parser.status_label"), expanded=True) as status:
-        status.update(label=t("parser.spinner_connecting"), state="running")
-        progress_placeholder = st.empty()
+    st.session_state["parsing_active"] = True
+    try:
+        with st.status(t("parser.status_label"), expanded=True) as status:
+            status.update(label=t("parser.spinner_connecting"), state="running")
+            progress_placeholder = st.empty()
 
-        def on_progress(count: int) -> None:
-            if limit > 0:
-                pct = min(int(count / limit * 100), 99)
-                progress_placeholder.progress(pct, text=t("parser.progress_parsed", count=count))
-            else:
-                progress_placeholder.markdown(t("parser.progress_parsed", count=count))
+            def on_progress(count: int) -> None:
+                if limit > 0:
+                    pct = min(int(count / limit * 100), 99)
+                    msg = t("parser.progress_parsed", count=count)
+                    progress_placeholder.progress(pct, text=msg)
+                else:
+                    progress_placeholder.markdown(t("parser.progress_parsed", count=count))
 
-        try:
-            result, output_files = asyncio.run(
-                _parse_async(
-                    settings,
-                    channel,
-                    from_date,
-                    to_date,
-                    limit,
-                    export_format,
-                    output_dir,
-                    incremental,
-                    fields,
-                    on_progress,
-                    status,
-                    options,
+            try:
+                result, output_files = asyncio.run(
+                    _parse_async(
+                        settings,
+                        channel,
+                        from_date,
+                        to_date,
+                        limit,
+                        export_format,
+                        output_dir,
+                        incremental,
+                        fields,
+                        on_progress,
+                        status,
+                        options,
+                    )
                 )
-            )
-            st.session_state["last_parse_result"] = result.model_dump(mode="json")
-            st.session_state["last_output_files"] = output_files
-            st.session_state["result_text_only"] = options.text_only
+                st.session_state["last_parse_result"] = result.model_dump(mode="json")
+                st.session_state["last_output_files"] = output_files
+                st.session_state["result_text_only"] = options.text_only
 
-            if limit > 0:
-                progress_placeholder.progress(100, text=t("parser.progress_done"))
+                if limit > 0:
+                    progress_placeholder.progress(100, text=t("parser.progress_done"))
 
-            status.update(label=t("parser.success", count=result.total_messages), state="complete")
-            st.toast(t("parser.toast_success", count=result.total_messages), icon="\u2705")
+                done_label = t("parser.success", count=result.total_messages)
+                status.update(label=done_label, state="complete")
+                st.toast(t("parser.toast_success", count=result.total_messages), icon="\u2705")
 
-            # Invalidate search/analytics caches so they pick up new data
-            _invalidate_data_caches()
+                # Invalidate search/analytics caches so they pick up new data
+                _invalidate_data_caches()
 
-        except Exception as e:
-            status.update(label=t("parser.status_error"), state="error")
-            _show_parse_error(e, channel)
-            st.toast(t("parser.toast_error"), icon="\u274c")
+            except Exception as e:
+                status.update(label=t("parser.status_error"), state="error")
+                _show_parse_error(e, channel)
+                st.toast(t("parser.toast_error"), icon="\u274c")
+    finally:
+        st.session_state["parsing_active"] = False
 
 
 def _invalidate_data_caches():
@@ -552,7 +607,7 @@ def _build_txt(result_data: dict) -> str:
         text = msg_data.get("text") or ""
         if text.strip():
             lines.append(text.strip())
-    return "\n\n".join(lines)
+    return "\n".join(lines)
 
 
 def _build_text_only_csv(result_data: dict) -> str:
