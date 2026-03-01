@@ -132,6 +132,12 @@
   "parser.download_xlsx": "\u2b07\ufe0f Завантажити XLSX",
   "parser.message_detail_expander": "Переглянути повний текст повідомлення",
   "parser.message_detail_id_label": "ID повідомлення",
+  "parser.table_truncated": "Показано останні {shown} з {total} повідомлень",
+  "parser.text_only_label": "Тільки текст",
+  "parser.text_only_help": "Показувати та експортувати лише текст повідомлень, без метаданих",
+  "parser.download_txt": "\u2b07\ufe0f Завантажити TXT",
+  "parser.parse_text_only_label": "Тільки текст (швидко)",
+  "parser.parse_text_only_help": "Парсити лише текст повідомлень — пропускає медіа, реакції, пересилання для швидшого парсингу",
 
   "search.header": "Пошук повідомлень",
   "search.caption": "Крок 4 \u2014 знайдіть повідомлення серед усіх розпарсених даних",

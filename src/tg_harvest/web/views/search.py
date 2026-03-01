@@ -132,7 +132,7 @@ def render():
             ),
             t("search.col_media"): t("search.col_media"),
         },
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 

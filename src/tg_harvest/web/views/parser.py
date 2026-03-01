@@ -65,7 +65,7 @@ def render():
     ]
     for i, (label_key, fd, td, lim) in enumerate(presets):
         with preset_cols[i]:
-            if st.button(t(label_key), use_container_width=True):
+            if st.button(t(label_key), width="stretch"):
                 st.session_state["from_date_input"] = fd
                 st.session_state["to_date_input"] = td
                 st.session_state["limit_input"] = lim
@@ -76,13 +76,11 @@ def render():
         from_date = st.date_input(
             t("parser.from_date_label"),
             value=st.session_state.get("from_date_input"),
-            key="from_date_input",
         )
     with date_col2:
         to_date = st.date_input(
             t("parser.to_date_label"),
             value=st.session_state.get("to_date_input"),
-            key="to_date_input",
         )
     with date_col3:
         limit = st.number_input(
@@ -90,26 +88,33 @@ def render():
             min_value=0,
             value=st.session_state.get("limit_input", 0),
             step=100,
-            key="limit_input",
         )
 
     # Extended options
     st.markdown(t("parser.extended_options_label"))
-    ext_col1, ext_col2, ext_col3 = st.columns(3)
+    ext_col1, ext_col2, ext_col3, ext_col4 = st.columns(4)
     with ext_col1:
+        parse_text_only = st.checkbox(
+            t("parser.parse_text_only_label"),
+            help=t("parser.parse_text_only_help"),
+        )
+    with ext_col2:
         download_media = st.checkbox(
             t("parser.download_media_label"),
             help=t("parser.download_media_help"),
+            disabled=parse_text_only,
         )
-    with ext_col2:
+    with ext_col3:
         fetch_replies = st.checkbox(
             t("parser.fetch_replies_label"),
             help=t("parser.fetch_replies_help"),
+            disabled=parse_text_only,
         )
-    with ext_col3:
+    with ext_col4:
         enrich_senders = st.checkbox(
             t("parser.enrich_senders_label"),
             help=t("parser.enrich_senders_help"),
+            disabled=parse_text_only,
         )
 
     max_media_size = 50
@@ -148,14 +153,15 @@ def render():
         t("parser.parse_button"),
         type="primary",
         disabled=not channel or not selected_fields,
-        use_container_width=True,
+        width="stretch",
     ):
         fields = selected_fields if not select_all else None
         options = ParseOptions(
-            download_media=download_media,
+            download_media=download_media and not parse_text_only,
             max_media_size_mb=max_media_size,
-            fetch_replies=fetch_replies,
-            enrich_senders=enrich_senders,
+            fetch_replies=fetch_replies and not parse_text_only,
+            enrich_senders=enrich_senders and not parse_text_only,
+            text_only=parse_text_only,
         )
         _do_parse(
             settings,
@@ -220,6 +226,7 @@ def _do_parse(
             )
             st.session_state["last_parse_result"] = result.model_dump(mode="json")
             st.session_state["last_output_files"] = output_files
+            st.session_state["result_text_only"] = options.text_only
 
             if limit > 0:
                 progress_placeholder.progress(100, text=t("parser.progress_done"))
@@ -238,8 +245,8 @@ def _do_parse(
 
 def _invalidate_data_caches():
     """Clear search and analytics result caches after a successful parse."""
-    from tg_harvest.web.pages.analytics import _load_results_cached as analytics_cache
-    from tg_harvest.web.pages.search import _load_results_cached as search_cache
+    from tg_harvest.web.views.analytics import _load_results_cached as analytics_cache
+    from tg_harvest.web.views.search import _load_results_cached as search_cache
 
     search_cache.clear()
     analytics_cache.clear()
@@ -380,58 +387,86 @@ def _show_result(result_data: dict, output_files: list[str]):
     col4.metric(t("parser.metric_members"), result_data["channel"].get("members_count") or "N/A")
 
     if result_data["messages"]:
-        rows = []
-        for msg in result_data["messages"]:
-            rows.append(
-                {
-                    t("parser.col_id"): msg["id"],
-                    t("parser.col_date"): msg.get("date", ""),
-                    t("parser.col_text"): truncate(msg.get("text"), limit=200),
-                    t("parser.col_views"): msg.get("views") or 0,
-                    t("parser.col_forwards"): msg.get("forwards") or 0,
-                    t("parser.col_reactions"): msg.get("reactions", {}).get("total", 0)
-                    if msg.get("reactions")
-                    else 0,
-                    t("parser.col_media"): msg.get("media", {}).get("type", "")
-                    if msg.get("media")
-                    else "",
-                    t("parser.col_pinned"): msg.get("is_pinned", False),
-                }
+        display_msgs = result_data["messages"][-50:]
+
+        text_only = st.checkbox(
+            t("parser.text_only_label"),
+            help=t("parser.text_only_help"),
+            key="result_text_only",
+        )
+
+        if text_only:
+            rows = []
+            for msg in display_msgs:
+                rows.append({t("parser.col_text"): msg.get("text") or ""})
+            st.dataframe(
+                rows,
+                column_config={
+                    t("parser.col_text"): st.column_config.TextColumn(
+                        t("parser.col_text"), width="large"
+                    ),
+                },
+                width="stretch",
+                hide_index=True,
+            )
+        else:
+            rows = []
+            for msg in display_msgs:
+                rows.append(
+                    {
+                        t("parser.col_id"): msg["id"],
+                        t("parser.col_date"): msg.get("date", ""),
+                        t("parser.col_text"): truncate(msg.get("text"), limit=200),
+                        t("parser.col_views"): msg.get("views") or 0,
+                        t("parser.col_forwards"): msg.get("forwards") or 0,
+                        t("parser.col_reactions"): msg.get("reactions", {}).get("total", 0)
+                        if msg.get("reactions")
+                        else 0,
+                        t("parser.col_media"): msg.get("media", {}).get("type", "")
+                        if msg.get("media")
+                        else "",
+                        t("parser.col_pinned"): msg.get("is_pinned", False),
+                    }
+                )
+
+            st.dataframe(
+                rows,
+                column_config={
+                    t("parser.col_id"): st.column_config.NumberColumn(
+                        t("parser.col_id"), format="%d"
+                    ),
+                    t("parser.col_date"): t("parser.col_date"),
+                    t("parser.col_text"): st.column_config.TextColumn(
+                        t("parser.col_text"), width="large"
+                    ),
+                    t("parser.col_views"): st.column_config.NumberColumn(
+                        t("parser.col_views"), format="%d"
+                    ),
+                    t("parser.col_forwards"): st.column_config.NumberColumn(
+                        t("parser.col_forwards"), format="%d"
+                    ),
+                    t("parser.col_reactions"): st.column_config.NumberColumn(
+                        t("parser.col_reactions"), format="%d"
+                    ),
+                    t("parser.col_media"): t("parser.col_media"),
+                    t("parser.col_pinned"): st.column_config.CheckboxColumn(t("parser.col_pinned")),
+                },
+                width="stretch",
+                hide_index=True,
             )
 
-        st.dataframe(
-            rows,
-            column_config={
-                t("parser.col_id"): st.column_config.NumberColumn(t("parser.col_id"), format="%d"),
-                t("parser.col_date"): t("parser.col_date"),
-                t("parser.col_text"): st.column_config.TextColumn(
-                    t("parser.col_text"), width="large"
-                ),
-                t("parser.col_views"): st.column_config.NumberColumn(
-                    t("parser.col_views"), format="%d"
-                ),
-                t("parser.col_forwards"): st.column_config.NumberColumn(
-                    t("parser.col_forwards"), format="%d"
-                ),
-                t("parser.col_reactions"): st.column_config.NumberColumn(
-                    t("parser.col_reactions"), format="%d"
-                ),
-                t("parser.col_media"): t("parser.col_media"),
-                t("parser.col_pinned"): st.column_config.CheckboxColumn(t("parser.col_pinned")),
-            },
-            use_container_width=True,
-            hide_index=True,
-        )
+        if len(result_data["messages"]) > 50:
+            st.caption(t("parser.table_truncated", shown=50, total=len(result_data["messages"])))
 
         # Message detail viewer
         with st.expander(t("parser.message_detail_expander")):
-            msg_ids = [msg["id"] for msg in result_data["messages"]]
+            msg_ids = [msg["id"] for msg in display_msgs]
             selected_msg_id = st.selectbox(
                 t("parser.message_detail_id_label"),
                 msg_ids,
                 key="message_detail_select",
             )
-            for msg in result_data["messages"]:
+            for msg in display_msgs:
                 if msg["id"] == selected_msg_id:
                     st.markdown(f"**{t('parser.col_date')}:** {msg.get('date', '')}")
                     st.text_area(
@@ -450,52 +485,85 @@ def _show_result(result_data: dict, output_files: list[str]):
             size = _format_size(f)
             st.code(f"{f}  ({size})" if size else f)
 
-    col1, col2, col3, col4 = st.columns(4)
+    base_name = result_data["channel"].get("username", result_data["channel"]["id"])
 
-    with col1:
-        st.download_button(
-            t("parser.download_json"),
-            data=json.dumps(result_data, ensure_ascii=False, indent=2, default=str),
-            file_name=(
-                f"{result_data['channel'].get('username', result_data['channel']['id'])}.json"
-            ),
-            mime="application/json",
-        )
-
-    with col2:
-        csv_data = _build_csv(result_data)
-        st.download_button(
-            t("parser.download_csv"),
-            data=csv_data,
-            file_name=(
-                f"{result_data['channel'].get('username', result_data['channel']['id'])}.csv"
-            ),
-            mime="text/csv",
-        )
-
-    with col3:
-        xlsx_data = _build_xlsx(result_data)
-        if xlsx_data:
+    if text_only:
+        txt_data = _build_txt(result_data)
+        col1, col2 = st.columns(2)
+        with col1:
             st.download_button(
-                t("parser.download_xlsx"),
-                data=xlsx_data,
-                file_name=(
-                    f"{result_data['channel'].get('username', result_data['channel']['id'])}.xlsx"
-                ),
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                t("parser.download_txt"),
+                data=txt_data,
+                file_name=f"{base_name}.txt",
+                mime="text/plain",
+            )
+        with col2:
+            csv_data = _build_text_only_csv(result_data)
+            st.download_button(
+                t("parser.download_csv"),
+                data=csv_data,
+                file_name=f"{base_name}_text.csv",
+                mime="text/csv",
+            )
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.download_button(
+                t("parser.download_json"),
+                data=json.dumps(result_data, ensure_ascii=False, indent=2, default=str),
+                file_name=f"{base_name}.json",
+                mime="application/json",
             )
 
-    with col4:
-        html_data = _build_html(result_data)
-        if html_data:
+        with col2:
+            csv_data = _build_csv(result_data)
             st.download_button(
-                t("parser.download_html"),
-                data=html_data,
-                file_name=(
-                    f"{result_data['channel'].get('username', result_data['channel']['id'])}.html"
-                ),
-                mime="text/html",
+                t("parser.download_csv"),
+                data=csv_data,
+                file_name=f"{base_name}.csv",
+                mime="text/csv",
             )
+
+        with col3:
+            xlsx_data = _build_xlsx(result_data)
+            if xlsx_data:
+                st.download_button(
+                    t("parser.download_xlsx"),
+                    data=xlsx_data,
+                    file_name=f"{base_name}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+
+        with col4:
+            html_data = _build_html(result_data)
+            if html_data:
+                st.download_button(
+                    t("parser.download_html"),
+                    data=html_data,
+                    file_name=f"{base_name}.html",
+                    mime="text/html",
+                )
+
+
+def _build_txt(result_data: dict) -> str:
+    lines = []
+    for msg_data in result_data.get("messages", []):
+        text = msg_data.get("text") or ""
+        if text.strip():
+            lines.append(text.strip())
+    return "\n\n".join(lines)
+
+
+def _build_text_only_csv(result_data: dict) -> str:
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["text"])
+    for msg_data in result_data.get("messages", []):
+        text = msg_data.get("text") or ""
+        if text.strip():
+            writer.writerow([text.strip()])
+    return output.getvalue()
 
 
 def _build_csv(result_data: dict) -> str:

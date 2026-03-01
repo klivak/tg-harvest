@@ -120,7 +120,7 @@ def _render_single(options: dict):
             color_discrete_sequence=CHART_COLORS,
         )
         fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         _download_chart_csv(
             activity_data,
             t("analytics.per_day_x"),
@@ -140,7 +140,7 @@ def _render_single(options: dict):
             color_discrete_sequence=CHART_COLORS,
         )
         fig.update_layout(height=300, margin=dict(t=10, b=40), **CHART_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.caption(t("analytics.by_hour_caption"))
         _download_chart_csv(
             by_hour,
@@ -206,7 +206,7 @@ def _render_single(options: dict):
                         t("analytics.col_text"): truncate(orig.text if orig else "", limit=100),
                     }
                 )
-            st.dataframe(thread_rows, use_container_width=True, hide_index=True)
+            st.dataframe(thread_rows, width="stretch", hide_index=True)
 
     # Media distribution / reactions breakdown
     col1, col2 = st.columns(2)
@@ -220,7 +220,7 @@ def _render_single(options: dict):
                 color_discrete_sequence=CHART_COLORS,
             )
             fig.update_layout(height=350, margin=dict(t=10, b=10), **CHART_LAYOUT)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.subheader(t("analytics.reactions_breakdown_subheader"))
@@ -237,7 +237,7 @@ def _render_single(options: dict):
                 color_discrete_sequence=CHART_COLORS,
             )
             fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info(t("analytics.reactions_breakdown_empty"))
 
@@ -278,7 +278,7 @@ def _render_top_table(
             ),
             t("analytics.col_date"): t("analytics.col_date"),
         },
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -304,7 +304,7 @@ def _render_word_frequency(messages: list) -> None:
             color_discrete_sequence=CHART_COLORS,
         )
         fig.update_layout(height=350, margin=dict(t=10, b=40), **CHART_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info(t("analytics.word_freq_empty"))
 
@@ -340,7 +340,7 @@ def _render_compare(options: dict):
                 t("analytics.metric_edited"): s.edited_count(),
             }
         )
-    st.dataframe(comparison_rows, use_container_width=True, hide_index=True)
+    st.dataframe(comparison_rows, width="stretch", hide_index=True)
 
     # Overlay messages per day
     st.subheader(t("analytics.per_day_subheader"))
@@ -358,7 +358,7 @@ def _render_compare(options: dict):
             )
         )
     fig.update_layout(barmode="group", height=400, **CHART_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Overlay activity by hour
     st.subheader(t("analytics.by_hour_subheader"))
@@ -376,7 +376,7 @@ def _render_compare(options: dict):
             )
         )
     fig.update_layout(barmode="group", height=350, **CHART_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.caption(t("analytics.by_hour_caption"))
 
 

@@ -2,7 +2,7 @@
 
 import json
 
-from tg_harvest.web.pages.files import _format_size, _scan_files
+from tg_harvest.web.views.files import _format_size, _scan_files
 
 
 class TestScanFiles:

@@ -132,6 +132,12 @@
   "parser.download_xlsx": "\u2b07\ufe0f Download XLSX",
   "parser.message_detail_expander": "View full message text",
   "parser.message_detail_id_label": "Message ID",
+  "parser.table_truncated": "Showing last {shown} of {total} messages",
+  "parser.text_only_label": "Text only",
+  "parser.text_only_help": "Show only message text in results and exports, without metadata",
+  "parser.download_txt": "\u2b07\ufe0f Download TXT",
+  "parser.parse_text_only_label": "Text only (fast)",
+  "parser.parse_text_only_help": "Parse only message text — skip media, reactions, forwards for faster parsing",
 
   "search.header": "Search Messages",
   "search.caption": "Step 4 \u2014 find messages across all parsed data",

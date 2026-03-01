@@ -169,7 +169,9 @@ class ChannelParser:
             if from_date and msg.date and msg.date < from_date:
                 break
 
-            parsed = parse_message(msg, channel_info.id, channel_info.username)
+            parsed = parse_message(
+                msg, channel_info.id, channel_info.username, text_only=options.text_only
+            )
             if parsed is not None:
                 # Download media inline if requested
                 if downloader and parsed.media and parsed.media.type != MediaType.NONE:

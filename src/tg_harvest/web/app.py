@@ -131,26 +131,26 @@ if __name__ == "__main__" or st.runtime.exists():
     st.sidebar.caption(f"v{__version__}")
 
     if page == t("app.page_auth"):
-        from tg_harvest.web.pages.auth import render
+        from tg_harvest.web.views.auth import render
 
         render()
     elif page == t("app.page_channels"):
-        from tg_harvest.web.pages.channels import render
+        from tg_harvest.web.views.channels import render
 
         render()
     elif page == t("app.page_parse"):
-        from tg_harvest.web.pages.parser import render
+        from tg_harvest.web.views.parser import render
 
         render()
     elif page == t("app.page_search"):
-        from tg_harvest.web.pages.search import render
+        from tg_harvest.web.views.search import render
 
         render()
     elif page == t("app.page_analytics"):
-        from tg_harvest.web.pages.analytics import render
+        from tg_harvest.web.views.analytics import render
 
         render()
     elif page == t("app.page_files"):
-        from tg_harvest.web.pages.files import render
+        from tg_harvest.web.views.files import render
 
         render()

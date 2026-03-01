@@ -42,7 +42,7 @@ class TestProjectFiles:
             "cli",
             "cli/commands",
             "web",
-            "web/pages",
+            "web/views",
             "utils",
         ],
     )

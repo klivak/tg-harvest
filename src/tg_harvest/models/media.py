@@ -31,7 +31,7 @@ class MediaInfo(BaseModel):
     file_name: str | None = None
     file_size: int | None = None
     mime_type: str | None = None
-    duration: int | None = None
+    duration: float | None = None
     width: int | None = None
     height: int | None = None
     title: str | None = None

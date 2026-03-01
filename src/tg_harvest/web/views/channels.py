@@ -7,6 +7,15 @@ import streamlit as st
 from tg_harvest.config import Settings
 from tg_harvest.web.i18n import t
 
+# Stable internal keys for channel data (language-independent)
+_K_ID = "id"
+_K_TITLE = "title"
+_K_USERNAME = "username"
+_K_TYPE = "type"
+_K_MEMBERS = "members"
+_K_RESTRICTED = "restricted"
+_K_PRIVATE = "private"
+
 
 def render():
     st.header(t("channels.header"))
@@ -25,9 +34,7 @@ def render():
     with col_limit:
         limit = st.slider(t("channels.sidebar_slider"), 10, 500, 100)
     with col_btn:
-        load_clicked = st.button(
-            t("channels.load_button"), type="primary", use_container_width=True
-        )
+        load_clicked = st.button(t("channels.load_button"), type="primary", width="stretch")
 
     if load_clicked:
         with st.spinner(t("channels.spinner_fetching")):
@@ -61,15 +68,33 @@ def render():
         channels = [
             c
             for c in channels
-            if search.lower() in c[t("channels.col_title")].lower()
-            or (
-                c[t("channels.col_username")]
-                and search.lower() in c[t("channels.col_username")].lower()
-            )
+            if search.lower() in c[_K_TITLE].lower()
+            or (c[_K_USERNAME] and search.lower() in c[_K_USERNAME].lower())
         ]
 
+    # Build display rows with translated column names
+    type_map = {
+        "bot": t("channels.type_bot"),
+        "group": t("channels.type_group"),
+        "channel": t("channels.type_channel"),
+        "user": t("channels.type_user"),
+    }
+    display_rows = []
+    for c in channels:
+        display_rows.append(
+            {
+                t("channels.col_id"): c[_K_ID],
+                t("channels.col_title"): c[_K_TITLE],
+                t("channels.col_username"): c[_K_USERNAME],
+                t("channels.col_type"): type_map.get(c[_K_TYPE], c[_K_TYPE]),
+                t("channels.col_members"): c[_K_MEMBERS],
+                t("channels.col_restricted"): c[_K_RESTRICTED],
+                t("channels.col_private"): c[_K_PRIVATE],
+            }
+        )
+
     st.dataframe(
-        channels,
+        display_rows,
         column_config={
             t("channels.col_id"): st.column_config.NumberColumn(t("channels.col_id"), format="%d"),
             t("channels.col_title"): t("channels.col_title"),
@@ -81,7 +106,7 @@ def render():
             t("channels.col_restricted"): t("channels.col_restricted"),
             t("channels.col_private"): t("channels.col_private"),
         },
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -96,9 +121,9 @@ def render():
 
     channel_options: dict[str, str] = {}
     for c in channels:
-        ch_title = c[t("channels.col_title")]
-        ch_username = c[t("channels.col_username")]
-        ch_id = c[t("channels.col_id")]
+        ch_title = c[_K_TITLE]
+        ch_username = c[_K_USERNAME]
+        ch_id = c[_K_ID]
         if ch_username:
             label = f"{ch_title} (@{ch_username})"
             value = f"@{ch_username}"
@@ -134,7 +159,6 @@ async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
     from tg_harvest.client.rate_limiter import RateLimiter
     from tg_harvest.client.session import TelegramSession
     from tg_harvest.parsers.channel_parser import ChannelParser
-    from tg_harvest.web.i18n import t as _t
 
     async with TelegramSession(settings) as session:
         rate_limiter = RateLimiter(delay=settings.request_delay)
@@ -144,22 +168,22 @@ async def _fetch_channels(settings: Settings, limit: int) -> list[dict]:
     rows = []
     for ch in channel_list:
         if ch.is_bot:
-            ch_type = _t("channels.type_bot")
+            ch_type = "bot"
         elif ch.is_group:
-            ch_type = _t("channels.type_group")
+            ch_type = "group"
         elif ch.is_channel:
-            ch_type = _t("channels.type_channel")
+            ch_type = "channel"
         else:
-            ch_type = _t("channels.type_user")
+            ch_type = "user"
         rows.append(
             {
-                _t("channels.col_id"): ch.id,
-                _t("channels.col_title"): ch.title,
-                _t("channels.col_username"): ch.username or "",
-                _t("channels.col_type"): ch_type,
-                _t("channels.col_members"): ch.members_count or 0,
-                _t("channels.col_restricted"): "\U0001f512" if ch.restricted else "",
-                _t("channels.col_private"): "\U0001f510" if not ch.username else "",
+                _K_ID: ch.id,
+                _K_TITLE: ch.title,
+                _K_USERNAME: ch.username or "",
+                _K_TYPE: ch_type,
+                _K_MEMBERS: ch.members_count or 0,
+                _K_RESTRICTED: "\U0001f512" if ch.restricted else "",
+                _K_PRIVATE: "\U0001f510" if not ch.username else "",
             }
         )
     return rows

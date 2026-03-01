@@ -13,11 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def parse_message(
-    msg, channel_id: int, channel_username: str | None = None
+    msg,
+    channel_id: int,
+    channel_username: str | None = None,
+    text_only: bool = False,
 ) -> ParsedMessage | None:
     """Convert a Telethon Message to a ParsedMessage.
 
     Returns None if the message is a service message or cannot be parsed.
+    When text_only=True, skips media, reactions, forwards, entities for speed.
     """
     if isinstance(msg, types.MessageService):
         return None
@@ -26,6 +30,14 @@ def parse_message(
         return None
 
     try:
+        if text_only:
+            return ParsedMessage(
+                id=msg.id,
+                channel_id=channel_id,
+                channel_username=channel_username,
+                date=msg.date,
+                text=msg.message or "",
+            )
         return ParsedMessage(
             id=msg.id,
             channel_id=channel_id,

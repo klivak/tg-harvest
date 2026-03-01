@@ -18,3 +18,6 @@ class ParseOptions:
 
     # Sender enrichment
     enrich_senders: bool = False
+
+    # Text-only mode — skip media, reactions, forwards, entities
+    text_only: bool = False

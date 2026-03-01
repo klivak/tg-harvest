@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-03-01
+
+### Added
+
+- **Text-only mode**: checkbox in parser results to show only message text, with TXT and text-only CSV export
+- **TXT export**: download parsed messages as plain text file
+
+### Fixed
+
+- **Blank web pages**: renamed `pages/` → `views/` to prevent Streamlit auto-discovery conflict with custom navigation
+- **KeyError on channels page**: use stable internal keys for channel data instead of translated keys that break on language change or cache reuse
+- **Streamlit widget conflict**: removed duplicate `value=` + `key=` on date/limit inputs
+- **Media duration validation**: changed `MediaInfo.duration` from `int` to `float` to accept Telegram's fractional durations
+
+### Changed
+
+- **Deprecation fix**: replaced `use_container_width=True` with `width="stretch"` across all web views (Streamlit deprecation)
+- **Parser results table**: limited to last 50 messages to avoid UI overload on large parses
+
 ## [0.9.1] - 2026-03-01
 
 ### Fixed
