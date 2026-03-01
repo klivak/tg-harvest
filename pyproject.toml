@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tg-harvest"
-version = "1.0.0"
+version = "1.1.0"
 description = "Telegram data harvester via MTProto API — channels, groups, bots, private chats"
 license = {text = "MIT"}
 keywords = [

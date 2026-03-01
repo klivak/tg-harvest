@@ -26,12 +26,12 @@ MEDIA_ICONS: dict[str, str] = {
 class HtmlExporter(BaseExporter):
     """Export parse results as a self-contained HTML report."""
 
-    async def export(self, result: ParseResult, output_path: Path) -> Path:
+    async def export(self, result: ParseResult, output_path: Path, file_suffix: str = "") -> Path:
         output_path.mkdir(parents=True, exist_ok=True)
 
         channel_name = result.channel.username or str(result.channel.id)
         timestamp = result.parsed_at.strftime("%Y%m%d_%H%M%S")
-        file_path = output_path / f"{channel_name}_{timestamp}.html"
+        file_path = output_path / f"{channel_name}_{timestamp}{file_suffix}.html"
 
         content = self._render(result)
         file_path.write_text(content, encoding="utf-8")

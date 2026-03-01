@@ -25,12 +25,12 @@ TEXT_COL_WIDTH = 50
 
 
 class XlsxExporter(BaseExporter):
-    async def export(self, result: ParseResult, output_path: Path) -> Path:
+    async def export(self, result: ParseResult, output_path: Path, file_suffix: str = "") -> Path:
         output_path.mkdir(parents=True, exist_ok=True)
 
         channel_name = result.channel.username or str(result.channel.id)
         timestamp = result.parsed_at.strftime("%Y%m%d_%H%M%S")
-        file_path = output_path / f"{channel_name}_{timestamp}.xlsx"
+        file_path = output_path / f"{channel_name}_{timestamp}{file_suffix}.xlsx"
 
         wb = Workbook()
         ws = wb.active

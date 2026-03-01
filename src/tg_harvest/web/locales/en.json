@@ -276,6 +276,13 @@
   "parser.enrich_senders_label": "Enrich senders",
   "parser.enrich_senders_help": "Resolve sender IDs to usernames and display names",
   "parser.max_media_size_label": "Max media file size (MB)",
+  "parser.split_parts_label": "Split into parts",
+  "parser.split_parts_help": "Split download into N files (2-10). Useful for large exports. Files are packed into a ZIP archive.",
+  "parser.download_txt_zip": "\u2b07\ufe0f Download TXT (ZIP)",
+  "parser.download_json_zip": "\u2b07\ufe0f Download JSON (ZIP)",
+  "parser.download_csv_zip": "\u2b07\ufe0f Download CSV (ZIP)",
+  "parser.download_xlsx_zip": "\u2b07\ufe0f Download XLSX (ZIP)",
+  "parser.download_html_zip": "\u2b07\ufe0f Download HTML (ZIP)",
 
   "analytics.threads_subheader": "Reply Threads",
   "analytics.metric_total_threads": "Threads",

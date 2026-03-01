@@ -276,6 +276,13 @@
   "parser.enrich_senders_label": "Збагатити відправників",
   "parser.enrich_senders_help": "Розшифрувати ID відправників у юзернейми та імена",
   "parser.max_media_size_label": "Макс. розмір медіа (МБ)",
+  "parser.split_parts_label": "Розбити на частини",
+  "parser.split_parts_help": "Розбити завантаження на N файлів (2-10). Корисно для великих експортів. Файли пакуються в ZIP-архів.",
+  "parser.download_txt_zip": "\u2b07\ufe0f Завантажити TXT (ZIP)",
+  "parser.download_json_zip": "\u2b07\ufe0f Завантажити JSON (ZIP)",
+  "parser.download_csv_zip": "\u2b07\ufe0f Завантажити CSV (ZIP)",
+  "parser.download_xlsx_zip": "\u2b07\ufe0f Завантажити XLSX (ZIP)",
+  "parser.download_html_zip": "\u2b07\ufe0f Завантажити HTML (ZIP)",
 
   "analytics.threads_subheader": "Гілки відповідей",
   "analytics.metric_total_threads": "Гілок",

@@ -113,6 +113,13 @@ console = Console()
     default=False,
     help="Resolve sender IDs to usernames and names.",
 )
+@click.option(
+    "--split-parts",
+    default=1,
+    type=click.IntRange(1, 10),
+    help="Split output into N parts (1-10).",
+    show_default=True,
+)
 def parse(
     channel: str,
     from_date: str | None,
@@ -127,6 +134,7 @@ def parse(
     media_dir: str | None,
     fetch_replies: bool,
     enrich_senders: bool,
+    split_parts: int,
 ):
     """Parse messages from a Telegram channel, group, bot, or private chat.
 
@@ -162,6 +170,7 @@ def parse(
             incremental,
             field_list,
             options,
+            split_parts,
         )
     )
 
@@ -176,6 +185,7 @@ async def _parse_async(
     incremental: bool,
     fields: list[str] | None,
     options: ParseOptions,
+    split_parts: int = 1,
 ):
     settings = Settings()
     # Reject path traversal
@@ -256,23 +266,32 @@ async def _parse_async(
             if ds.failed:
                 console.print(f"[yellow]Failed to download {ds.failed} files[/yellow]")
 
-        # Export
+        # Export (with optional split)
+        from tg_harvest.exporters.splitter import (
+            make_part_result,
+            make_part_suffix,
+            split_messages,
+        )
+
+        chunks = split_messages(result.messages, split_parts)
+        total_parts = len(chunks)
         output_files: list[str] = []
 
-        if export_format in ("json", "all"):
-            path = await JsonExporter(fields).export(result, out_path)
-            output_files.append(str(path))
+        for part_idx, chunk in enumerate(chunks, 1):
+            suffix = make_part_suffix(part_idx, total_parts)
+            part = make_part_result(result, chunk) if total_parts > 1 else result
 
-        if export_format in ("csv", "all"):
-            path = await CsvExporter(fields).export(result, out_path)
-            output_files.append(str(path))
-
-        if export_format in ("xlsx", "all"):
-            path = await XlsxExporter(fields).export(result, out_path)
-            output_files.append(str(path))
-
-        if export_format in ("html", "all"):
-            path = await HtmlExporter(fields).export(result, out_path)
-            output_files.append(str(path))
+            if export_format in ("json", "all"):
+                path = await JsonExporter(fields).export(part, out_path, suffix)
+                output_files.append(str(path))
+            if export_format in ("csv", "all"):
+                path = await CsvExporter(fields).export(part, out_path, suffix)
+                output_files.append(str(path))
+            if export_format in ("xlsx", "all"):
+                path = await XlsxExporter(fields).export(part, out_path, suffix)
+                output_files.append(str(path))
+            if export_format in ("html", "all"):
+                path = await HtmlExporter(fields).export(part, out_path, suffix)
+                output_files.append(str(path))
 
         print_parse_summary(result, output_files)

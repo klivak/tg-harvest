@@ -5,6 +5,7 @@ import csv
 import io
 import json
 import os
+import zipfile
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -545,7 +546,21 @@ def _show_result(result_data: dict, output_files: list[str]):
 
     base_name = result_data["channel"].get("username", result_data["channel"]["id"])
 
-    if text_only:
+    # Split selector — only affects downloads, no re-parsing needed
+    split_col1, split_col2 = st.columns([1, 3])
+    with split_col1:
+        split_parts = st.number_input(
+            t("parser.split_parts_label"),
+            min_value=1,
+            max_value=10,
+            value=1,
+            help=t("parser.split_parts_help"),
+            key="download_split_parts",
+        )
+
+    if split_parts > 1:
+        _show_split_downloads(result_data, base_name, int(split_parts), text_only)
+    elif text_only:
         txt_data = _build_txt(result_data)
         col1, col2 = st.columns(2)
         with col1:
@@ -601,6 +616,112 @@ def _show_result(result_data: dict, output_files: list[str]):
                     data=html_data,
                     file_name=f"{base_name}.html",
                     mime="text/html",
+                )
+
+
+def _split_messages(messages: list[dict], parts: int) -> list[list[dict]]:
+    """Split message dicts into roughly-equal chunks (mirrors splitter.split_messages)."""
+    if parts <= 1 or not messages:
+        return [messages]
+    total = len(messages)
+    chunk_size, remainder = divmod(total, parts)
+    chunks: list[list[dict]] = []
+    offset = 0
+    for i in range(parts):
+        size = chunk_size + (1 if i < remainder else 0)
+        chunk = messages[offset : offset + size]
+        if chunk:
+            chunks.append(chunk)
+        offset += size
+    return chunks
+
+
+def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, text_only: bool):
+    """Build zip downloads with split parts."""
+    messages = result_data.get("messages", [])
+    chunks = _split_messages(messages, split_parts)
+    total_parts = len(chunks)
+
+    def _make_part_data(chunk: list[dict]) -> dict:
+        return {**result_data, "messages": chunk}
+
+    def _build_format_zip(ext: str, builder) -> bytes | None:
+        buf = io.BytesIO()
+        has_content = False
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for idx, chunk in enumerate(chunks, 1):
+                part_data = _make_part_data(chunk)
+                content = builder(part_data)
+                if content is None:
+                    continue
+                fname = f"{base_name}_part{idx}of{total_parts}.{ext}"
+                if isinstance(content, bytes):
+                    zf.writestr(fname, content)
+                else:
+                    zf.writestr(fname, content)
+                has_content = True
+        return buf.getvalue() if has_content else None
+
+    if text_only:
+        col1, col2 = st.columns(2)
+        with col1:
+            zip_data = _build_format_zip("txt", _build_txt)
+            if zip_data:
+                st.download_button(
+                    t("parser.download_txt_zip"),
+                    data=zip_data,
+                    file_name=f"{base_name}_txt.zip",
+                    mime="application/zip",
+                )
+        with col2:
+            zip_data = _build_format_zip("csv", _build_text_only_csv)
+            if zip_data:
+                st.download_button(
+                    t("parser.download_csv_zip"),
+                    data=zip_data,
+                    file_name=f"{base_name}_csv.zip",
+                    mime="application/zip",
+                )
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            zip_data = _build_format_zip(
+                "json",
+                lambda d: json.dumps(d, ensure_ascii=False, indent=2, default=str),
+            )
+            if zip_data:
+                st.download_button(
+                    t("parser.download_json_zip"),
+                    data=zip_data,
+                    file_name=f"{base_name}_json.zip",
+                    mime="application/zip",
+                )
+        with col2:
+            zip_data = _build_format_zip("csv", _build_csv)
+            if zip_data:
+                st.download_button(
+                    t("parser.download_csv_zip"),
+                    data=zip_data,
+                    file_name=f"{base_name}_csv.zip",
+                    mime="application/zip",
+                )
+        with col3:
+            zip_data = _build_format_zip("xlsx", _build_xlsx)
+            if zip_data:
+                st.download_button(
+                    t("parser.download_xlsx_zip"),
+                    data=zip_data,
+                    file_name=f"{base_name}_xlsx.zip",
+                    mime="application/zip",
+                )
+        with col4:
+            zip_data = _build_format_zip("html", _build_html)
+            if zip_data:
+                st.download_button(
+                    t("parser.download_html_zip"),
+                    data=zip_data,
+                    file_name=f"{base_name}_html.zip",
+                    mime="application/zip",
                 )
 
 

@@ -69,12 +69,13 @@ class BaseExporter(ABC):
         self.fields = resolve_fields(fields)
 
     @abstractmethod
-    async def export(self, result: ParseResult, output_path: Path) -> Path:
+    async def export(self, result: ParseResult, output_path: Path, file_suffix: str = "") -> Path:
         """Export parse result to a file.
 
         Args:
             result: The parse result to export.
             output_path: Directory where the file will be saved.
+            file_suffix: Optional suffix before extension (e.g. '_part1of3').
 
         Returns:
             Path to the created file.
