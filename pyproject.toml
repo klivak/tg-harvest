@@ -4,9 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tg-harvest"
-version = "1.1.0"
+version = "1.1.1"
 description = "Telegram data harvester via MTProto API — channels, groups, bots, private chats"
+readme = "README.md"
 license = {text = "MIT"}
+authors = [{name = "klivak"}]
 keywords = [
     "telegram", "parser", "scraper", "telethon", "telegram-api",
     "telegram-channel", "telegram-export", "telegram-analytics",
@@ -35,6 +37,12 @@ dev = [
     "ruff>=0.5",
     "pre-commit>=3.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/klivak/tg-harvest"
+Repository = "https://github.com/klivak/tg-harvest"
+Changelog = "https://github.com/klivak/tg-harvest/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/klivak/tg-harvest/issues"
 
 [project.scripts]
 tg-harvest = "tg_harvest.cli.app:cli"

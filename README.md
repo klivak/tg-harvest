@@ -1,10 +1,13 @@
 # TG Harvest
 
 [![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/klivak/tg-harvest)](https://github.com/klivak/tg-harvest/releases)
 
 Telegram data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel, group, bot, or private chat you have access to — including restricted channels where copying is disabled.
 
-**Use cases:** Telegram channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management, bot conversation export.
+**Use cases:** channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management, bot conversation export.
 
 ## Quick Start
 
@@ -88,10 +91,6 @@ tg-harvest search "keyword"   # search parsed data
 
 ---
 
-**Keywords:** telegram parser, telegram scraper, telegram channel export, telegram messages download, telegram analytics, telegram data extraction, telethon, telegram api, telegram backup, telegram archive, telegram channel statistics, telegram reactions, telegram views counter, restricted channel parser, private channel export, telegram to excel, telegram to csv, telegram to json, telegram content analysis, telegram monitoring tool, telegram bot parser, telegram bot export, telegram private chat export
-
----
-
 ## Features
 
 - **Full MTProto access** — works at the protocol level, bypasses UI restrictions (copy-disabled channels)
@@ -143,58 +142,9 @@ TG Harvest can extract data from channels and groups where Telegram's UI disable
 
 ---
 
-## Requirements
-
-- Python 3.11+
-- Telegram API credentials (get from [my.telegram.org/apps](https://my.telegram.org/apps))
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/klivak/tg-harvest.git
-cd tg-harvest
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\activate     # Windows
-
-# Install
-pip install -e .
-
-# Install dev dependencies (for testing/linting)
-pip install -e ".[dev]"
-```
-
----
-
-## Configuration
-
-Copy `.env.example` to `.env` and fill in your credentials:
-
-```bash
-cp .env.example .env
-```
-
-```env
-TG_API_ID=12345678
-TG_API_HASH=your_api_hash_here
-TG_PHONE=+380123456789
-```
-
-### Getting API Credentials
-
-1. Go to [my.telegram.org/apps](https://my.telegram.org/apps)
-2. Log in with your phone number
-3. Click **API development tools**
-4. Fill in any app title and short name (e.g. `tg-harvest`)
-5. Copy **App api_id** and **App api_hash**
-
----
-
 ## Usage
+
+> For installation and configuration, see [Quick Start](#quick-start) above.
 
 ### Authentication
 
@@ -472,6 +422,9 @@ MIT
 # TG Harvest (Українська)
 
 [![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/klivak/tg-harvest)](https://github.com/klivak/tg-harvest/releases)
 
 Інструмент для збору даних з Telegram — каналів, груп, ботів і приватних чатів через MTProto API.
 
@@ -609,58 +562,9 @@ TG Harvest може витягувати дані з каналів і груп,
 
 ---
 
-## Вимоги
-
-- Python 3.11+
-- API-ключі Telegram (отримати на [my.telegram.org/apps](https://my.telegram.org/apps))
-
----
-
-## Встановлення
-
-```bash
-git clone https://github.com/klivak/tg-harvest.git
-cd tg-harvest
-
-# Створити віртуальне середовище
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\activate     # Windows
-
-# Встановити
-pip install -e .
-
-# Встановити dev-залежності (для тестів і лінтингу)
-pip install -e ".[dev]"
-```
-
----
-
-## Налаштування
-
-Скопіюйте `.env.example` у `.env` і заповніть ключі:
-
-```bash
-cp .env.example .env
-```
-
-```env
-TG_API_ID=12345678
-TG_API_HASH=ваш_api_hash
-TG_PHONE=+380501234567
-```
-
-### Як отримати API-ключі
-
-1. Перейдіть на [my.telegram.org/apps](https://my.telegram.org/apps)
-2. Увійдіть за номером телефону
-3. Натисніть **API development tools**
-4. Вкажіть будь-яку назву додатку (наприклад `tg-harvest`)
-5. Скопіюйте **App api_id** та **App api_hash**
-
----
-
 ## Використання
+
+> Встановлення та налаштування — див. [Швидкий старт](#швидкий-старт) вище.
 
 ### Авторизація
 
