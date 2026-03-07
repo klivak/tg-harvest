@@ -1,5 +1,7 @@
 # TG Harvest
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/klivak)
+
 [![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -421,6 +423,8 @@ MIT
 
 # TG Harvest (Українська)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/klivak)
+
 [![CI](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml/badge.svg)](https://github.com/klivak/tg-harvest/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -829,3 +833,7 @@ pre-commit install
 ## Ліцензія
 
 MIT
+
+---
+
+☕ [Buy me a coffee](https://ko-fi.com/klivak) if this project helped you
