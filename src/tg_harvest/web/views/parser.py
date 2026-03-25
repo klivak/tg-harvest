@@ -63,6 +63,17 @@ def render():
             channels_list = [ch.strip() for ch in channels_text.strip().splitlines() if ch.strip()]
         else:
             labels = list(channel_options.keys())
+
+            # Search filter
+            search_query = st.text_input(
+                t("parser.channel_search_label"),
+                placeholder=t("parser.channel_search_placeholder"),
+                key="channel_search",
+            )
+            if search_query:
+                query_lower = search_query.lower()
+                labels = [lbl for lbl in labels if query_lower in lbl.lower()]
+
             # Default selection from prefill
             default_selection = []
             if prefill:

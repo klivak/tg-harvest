@@ -290,6 +290,8 @@
   "analytics.metric_max_replies": "Max replies",
   "analytics.col_replies": "Replies",
 
+  "parser.channel_search_label": "Search channels",
+  "parser.channel_search_placeholder": "Type to filter channels...",
   "parser.channel_multiselect_label": "Select channels (one or more)",
   "parser.channel_textarea_label": "Channels (one per line)",
   "parser.channel_textarea_placeholder": "@channel1\n@channel2\n-1001234567890",
