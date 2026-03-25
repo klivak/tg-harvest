@@ -288,5 +288,13 @@
   "analytics.metric_total_threads": "Гілок",
   "analytics.metric_avg_replies": "Сер. відповідей/гілку",
   "analytics.metric_max_replies": "Макс. відповідей",
-  "analytics.col_replies": "Відповіді"
+  "analytics.col_replies": "Відповіді",
+
+  "parser.channel_multiselect_label": "Оберіть канали (один або кілька)",
+  "parser.channel_textarea_label": "Канали (по одному на рядок)",
+  "parser.channel_textarea_placeholder": "@channel1\n@channel2\n-1001234567890",
+  "parser.queue_count": "Каналів у черзі: {count}",
+  "parser.queue_progress": "Парсинг {current}/{total}: {channel}",
+  "parser.queue_complete": "Розпарсено {count} каналів ({total} повідомлень)",
+  "parser.split_info": "Щоб розбити результат на кілька файлів, використовуйте опцію **Розбити на частини**, яка з'явиться в секції результатів після парсингу."
 }

@@ -288,5 +288,13 @@
   "analytics.metric_total_threads": "Threads",
   "analytics.metric_avg_replies": "Avg replies/thread",
   "analytics.metric_max_replies": "Max replies",
-  "analytics.col_replies": "Replies"
+  "analytics.col_replies": "Replies",
+
+  "parser.channel_multiselect_label": "Select channels (one or more)",
+  "parser.channel_textarea_label": "Channels (one per line)",
+  "parser.channel_textarea_placeholder": "@channel1\n@channel2\n-1001234567890",
+  "parser.queue_count": "Channels in queue: {count}",
+  "parser.queue_progress": "Parsing {current}/{total}: {channel}",
+  "parser.queue_complete": "Parsed {count} channels ({total} messages)",
+  "parser.split_info": "To split output into multiple files, use the **Split into parts** option that appears in the results section after parsing."
 }

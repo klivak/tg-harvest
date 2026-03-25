@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-25
+
+### Added
+
+- **Multi-channel queue parsing**: parse multiple channels sequentially in a single session
+  - CLI: `tg-harvest parse @chan1 @chan2 @chan3` — channels are parsed one after another
+  - Web UI: multi-select from loaded channels or enter multiple channels (one per line)
+  - Queue progress display in both CLI (Rich) and Web UI (Streamlit status)
+- **Per-channel output folders**: when parsing multiple channels, each channel's exports are saved to a separate subfolder (`output/{channel_name}/`)
+- **Queue summary**: after queue completes, shows a summary table with success/fail status, message counts per channel
+- **Error resilience**: if one channel in the queue fails, parsing continues with the next channel (CLI only)
+
 ## [1.1.2] - 2026-03-07
 
 ### Added

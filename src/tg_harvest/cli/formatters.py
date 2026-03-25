@@ -61,3 +61,40 @@ def print_parse_summary(result: ParseResult, output_files: list[str]) -> None:
 
     panel = Panel(table, title="Parse Complete", border_style="green")
     console.print(panel)
+
+
+def print_queue_summary(
+    results: list[tuple[str, ParseResult, list[str]]],
+    errors: list[tuple[str, str]],
+) -> None:
+    """Print summary table for multi-channel queue parse."""
+    table = Table(title="Queue Complete", show_header=True)
+    table.add_column("Channel", style="bold")
+    table.add_column("Status", justify="center")
+    table.add_column("Messages", justify="right")
+    table.add_column("Output", style="dim")
+
+    for channel, result, files in results:
+        table.add_row(
+            result.channel.title,
+            "[green]OK[/green]",
+            str(result.total_messages),
+            str(len(files)) + " files",
+        )
+
+    for channel, error in errors:
+        table.add_row(
+            channel,
+            "[red]FAIL[/red]",
+            "-",
+            error[:60],
+        )
+
+    total_msgs = sum(r.total_messages for _, r, _ in results)
+    console.print()
+    panel = Panel(
+        table,
+        subtitle=f"{len(results)} succeeded, {len(errors)} failed, {total_msgs} total messages",
+        border_style="green" if not errors else "yellow",
+    )
+    console.print(panel)

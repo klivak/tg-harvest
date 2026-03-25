@@ -32,7 +32,7 @@ def render():
     with st.expander(t("parser.tips_expander"), expanded=False):
         st.markdown(t("parser.tips_body"))
 
-    # Channel input — selectbox from loaded channels, or manual text input
+    # Channel input — multiselect from loaded channels, or manual text area
     prefill = st.session_state.pop("prefill_channel", "")
     loaded_channels = st.session_state.get("channels", [])
 
@@ -54,33 +54,40 @@ def render():
         manual_mode = st.checkbox(t("parser.channel_manual_toggle"))
 
         if manual_mode:
-            channel = st.text_input(
-                t("parser.channel_manual_label"),
+            channels_text = st.text_area(
+                t("parser.channel_textarea_label"),
                 value=prefill,
-                placeholder=t("parser.channel_placeholder"),
+                placeholder=t("parser.channel_textarea_placeholder"),
+                height=100,
             )
+            channels_list = [ch.strip() for ch in channels_text.strip().splitlines() if ch.strip()]
         else:
             labels = list(channel_options.keys())
-            # If prefilled, find matching index
-            default_idx = 0
+            # Default selection from prefill
+            default_selection = []
             if prefill:
-                for i, lbl in enumerate(labels):
+                for lbl in labels:
                     if channel_options[lbl] == prefill:
-                        default_idx = i
+                        default_selection = [lbl]
                         break
-            selected_label = st.selectbox(
-                t("parser.channel_select_label"),
+            selected_labels = st.multiselect(
+                t("parser.channel_multiselect_label"),
                 labels,
-                index=default_idx,
+                default=default_selection,
             )
-            channel = channel_options[selected_label]
+            channels_list = [channel_options[lbl] for lbl in selected_labels]
     else:
-        channel = st.text_input(
-            t("parser.channel_label"),
+        channels_text = st.text_area(
+            t("parser.channel_textarea_label"),
             value=prefill,
-            placeholder=t("parser.channel_placeholder"),
+            placeholder=t("parser.channel_textarea_placeholder"),
+            height=100,
         )
+        channels_list = [ch.strip() for ch in channels_text.strip().splitlines() if ch.strip()]
         st.caption(t("parser.channel_load_hint"))
+
+    if channels_list:
+        st.caption(t("parser.queue_count", count=len(channels_list)))
 
     # Quick options on one line
     col1, col2 = st.columns(2)
@@ -194,9 +201,11 @@ def render():
             st.warning(t("parser.fields_warning"))
 
     st.info(t("parser.flood_wait_info"))
+    st.info(t("parser.split_info"))
 
     # Parse button — show reason if disabled
-    if not channel:
+    has_channels = bool(channels_list)
+    if not has_channels:
         st.info(t("parser.empty_state_info"))
         st.caption(t("parser.empty_state_hint"))
     elif not selected_fields:
@@ -205,7 +214,7 @@ def render():
     if st.button(
         t("parser.parse_button"),
         type="primary",
-        disabled=not channel or not selected_fields,
+        disabled=not has_channels or not selected_fields,
         width="stretch",
     ):
         fields = selected_fields if not select_all else None
@@ -218,7 +227,7 @@ def render():
         )
         _do_parse(
             settings,
-            channel,
+            channels_list,
             from_date,
             to_date,
             int(limit),
@@ -229,8 +238,11 @@ def render():
             options,
         )
 
-    # Show last result
-    if "last_parse_result" in st.session_state:
+    # Show last results (multi-channel)
+    if "last_parse_results" in st.session_state:
+        for res_entry in st.session_state["last_parse_results"]:
+            _show_result(res_entry["result"], res_entry["files"])
+    elif "last_parse_result" in st.session_state:
         _show_result(
             st.session_state["last_parse_result"],
             st.session_state.get("last_output_files", []),
@@ -239,7 +251,7 @@ def render():
 
 def _do_parse(
     settings,
-    channel,
+    channels: list[str],
     from_date,
     to_date,
     limit,
@@ -250,6 +262,7 @@ def _do_parse(
     options: ParseOptions,
 ):
     st.session_state["parsing_active"] = True
+    multi = len(channels) > 1
     try:
         with st.status(t("parser.status_label"), expanded=True) as status:
             status.update(label=t("parser.spinner_connecting"), state="running")
@@ -264,10 +277,10 @@ def _do_parse(
                     progress_placeholder.markdown(t("parser.progress_parsed", count=count))
 
             try:
-                result, output_files = asyncio.run(
-                    _parse_async(
+                all_results = asyncio.run(
+                    _parse_queue_async(
                         settings,
-                        channel,
+                        channels,
                         from_date,
                         to_date,
                         limit,
@@ -280,23 +293,38 @@ def _do_parse(
                         options,
                     )
                 )
-                st.session_state["last_parse_result"] = result.model_dump(mode="json")
-                st.session_state["last_output_files"] = output_files
+
+                # Store results
+                total_msgs = sum(r["result"]["total_messages"] for r in all_results)
+
+                if multi:
+                    st.session_state["last_parse_results"] = all_results
+                    st.session_state.pop("last_parse_result", None)
+                    st.session_state.pop("last_output_files", None)
+                else:
+                    st.session_state["last_parse_result"] = all_results[0]["result"]
+                    st.session_state["last_output_files"] = all_results[0]["files"]
+                    st.session_state.pop("last_parse_results", None)
+
                 st.session_state["result_text_only"] = options.text_only
 
                 if limit > 0:
                     progress_placeholder.progress(100, text=t("parser.progress_done"))
 
-                done_label = t("parser.success", count=result.total_messages)
+                if multi:
+                    done_label = t(
+                        "parser.queue_complete", count=len(all_results), total=total_msgs
+                    )
+                else:
+                    done_label = t("parser.success", count=total_msgs)
                 status.update(label=done_label, state="complete")
-                st.toast(t("parser.toast_success", count=result.total_messages), icon="\u2705")
+                st.toast(t("parser.toast_success", count=total_msgs), icon="\u2705")
 
-                # Invalidate search/analytics caches so they pick up new data
                 _invalidate_data_caches()
 
             except Exception as e:
                 status.update(label=t("parser.status_error"), state="error")
-                _show_parse_error(e, channel)
+                _show_parse_error(e, channels[0] if channels else "?")
                 st.toast(t("parser.toast_error"), icon="\u274c")
     finally:
         st.session_state["parsing_active"] = False
@@ -336,9 +364,9 @@ def _show_parse_error(e: Exception, channel: str) -> None:
         st.error(t("parser.error_generic", error=e))
 
 
-async def _parse_async(
+async def _parse_queue_async(
     settings,
-    channel,
+    channels: list[str],
     from_date,
     to_date,
     limit,
@@ -364,6 +392,10 @@ async def _parse_async(
         raise ValueError("Output directory must not contain '..' path components.")
     out_path = Path(output_dir).resolve()
 
+    # Create date-stamped session folder
+    session_dir = out_path / datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    session_dir.mkdir(parents=True, exist_ok=True)
+
     fd = (
         datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)
         if from_date
@@ -375,52 +407,81 @@ async def _parse_async(
         else None
     )
 
-    channel_id = int(channel) if channel.lstrip("-").isdigit() else channel
-
+    multi = len(channels) > 1
     state = StateManager(settings.state_path)
-    min_id = 0
+    all_results: list[dict] = []
 
     async with TelegramSession(settings) as session:
         rate_limiter = RateLimiter(delay=settings.request_delay)
         parser = ChannelParser(session.client, rate_limiter)
 
-        if incremental:
-            info = await parser.get_channel_info(channel_id)
-            last_id = state.get_last_id(info.id)
-            if last_id:
-                min_id = last_id
+        for ch_idx, channel in enumerate(channels, 1):
+            channel_id = int(channel) if channel.lstrip("-").isdigit() else channel
+            min_id = 0
 
-        status.update(label=t("parser.spinner_parsing"), state="running")
+            if multi:
+                status.update(
+                    label=t(
+                        "parser.queue_progress",
+                        current=ch_idx,
+                        total=len(channels),
+                        channel=channel,
+                    ),
+                    state="running",
+                )
+            else:
+                status.update(label=t("parser.spinner_parsing"), state="running")
 
-        result = await parser.parse(
-            channel=channel_id,
-            from_date=fd,
-            to_date=td,
-            limit=limit if limit > 0 else 0,
-            min_id=min_id,
-            on_progress=on_progress,
-            options=options,
-        )
+            if incremental:
+                info = await parser.get_channel_info(channel_id)
+                last_id = state.get_last_id(info.id)
+                if last_id:
+                    min_id = last_id
 
-        if result.messages:
-            max_msg_id = max(m.id for m in result.messages)
-            state.set_last_id(result.channel.id, max_msg_id)
+            result = await parser.parse(
+                channel=channel_id,
+                from_date=fd,
+                to_date=td,
+                limit=limit if limit > 0 else 0,
+                min_id=min_id,
+                on_progress=on_progress,
+                options=options,
+            )
 
-        output_files = []
-        if export_format in ("json", "all"):
-            path = await JsonExporter(fields).export(result, out_path)
-            output_files.append(str(path))
-        if export_format in ("csv", "all"):
-            path = await CsvExporter(fields).export(result, out_path)
-            output_files.append(str(path))
-        if export_format in ("xlsx", "all"):
-            path = await XlsxExporter(fields).export(result, out_path)
-            output_files.append(str(path))
-        if export_format in ("html", "all"):
-            path = await HtmlExporter(fields).export(result, out_path)
-            output_files.append(str(path))
+            if result.messages:
+                max_msg_id = max(m.id for m in result.messages)
+                state.set_last_id(result.channel.id, max_msg_id)
 
-        return result, output_files
+            # Per-channel subfolder when multiple channels
+            channel_out = session_dir
+            if multi:
+                folder_name = result.channel.username or str(result.channel.id)
+                folder_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in folder_name)
+                channel_out = session_dir / folder_name
+                channel_out.mkdir(parents=True, exist_ok=True)
+
+            output_files = []
+            if export_format in ("json", "all"):
+                path = await JsonExporter(fields).export(result, channel_out)
+                output_files.append(str(path))
+            if export_format in ("csv", "all"):
+                path = await CsvExporter(fields).export(result, channel_out)
+                output_files.append(str(path))
+            if export_format in ("xlsx", "all"):
+                path = await XlsxExporter(fields).export(result, channel_out)
+                output_files.append(str(path))
+            if export_format in ("html", "all"):
+                path = await HtmlExporter(fields).export(result, channel_out)
+                output_files.append(str(path))
+
+            all_results.append(
+                {
+                    "result": result.model_dump(mode="json"),
+                    "files": output_files,
+                }
+            )
+
+    return all_results
 
 
 def _format_size(path: str) -> str:

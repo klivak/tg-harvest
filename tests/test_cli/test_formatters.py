@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from rich.console import Console
 
-from tg_harvest.cli.formatters import print_channel_table, print_parse_summary
+from tg_harvest.cli.formatters import print_channel_table, print_parse_summary, print_queue_summary
 from tg_harvest.models.channel import ChannelInfo
 from tg_harvest.models.parse_result import ParseResult
 
@@ -98,3 +98,36 @@ class TestPrintParseSummary:
         output = self._capture(sample_parse_result, [])
         assert "Oldest message" in output
         assert "Newest message" in output
+
+
+class TestPrintQueueSummary:
+    def _capture(self, results, errors) -> str:
+        buf = StringIO()
+        with patch("tg_harvest.cli.formatters.console", Console(file=buf, width=200)):
+            print_queue_summary(results, errors)
+        return buf.getvalue()
+
+    def test_all_success(self, sample_parse_result):
+        results = [
+            ("@chan1", sample_parse_result, ["f1.json"]),
+            ("@chan2", sample_parse_result, ["f2.json"]),
+        ]
+        output = self._capture(results, [])
+        assert "Queue Complete" in output
+        assert "OK" in output
+        assert "2 succeeded" in output
+        assert "0 failed" in output
+
+    def test_with_errors(self, sample_parse_result):
+        results = [("@chan1", sample_parse_result, ["f1.json"])]
+        errors = [("@chan2", "Not found")]
+        output = self._capture(results, errors)
+        assert "FAIL" in output
+        assert "1 succeeded" in output
+        assert "1 failed" in output
+
+    def test_all_errors(self):
+        errors = [("@c1", "err1"), ("@c2", "err2")]
+        output = self._capture([], errors)
+        assert "0 succeeded" in output
+        assert "2 failed" in output

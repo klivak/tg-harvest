@@ -9,7 +9,29 @@
 
 Telegram data harvester via MTProto API. Extracts messages, media metadata, reactions, views, forwards from any channel, group, bot, or private chat you have access to — including restricted channels where copying is disabled.
 
-**Use cases:** channel analytics, content archiving, social media monitoring, OSINT research, marketing analysis, competitor tracking, audience engagement metrics, message backup, data journalism, community management, bot conversation export.
+### What is TG Harvest?
+
+TG Harvest is an open-source Python tool for **downloading and exporting Telegram channel data**. It connects directly to Telegram's MTProto API (the same protocol used by the official app), giving you access to data that web scrapers and bots cannot reach — including channels with copy restrictions, private groups, and bot conversations.
+
+Unlike Telegram's built-in export (which only works for personal chats), TG Harvest can **export any channel or group you're a member of** — with full message text, reactions, view counts, forwards, media metadata, and more.
+
+### Who is this for?
+
+- **Marketers & SMM managers** — export channel posts for content analysis, track engagement metrics, compare competitor channels
+- **Researchers & data journalists** — collect Telegram data for analysis, monitor public discourse, archive news channels
+- **OSINT analysts** — extract data from public and private channels for investigations
+- **Community managers** — backup group conversations, analyze member activity, track discussion trends
+- **Developers & data scientists** — structured JSON/CSV export for building datasets, training models, or feeding into analytics pipelines
+- **Anyone who needs a Telegram backup** — export your own channels, groups, or bot conversations to JSON, CSV, Excel, or HTML
+
+### Key capabilities
+
+- Export Telegram channels, groups, bots, and private chats to **JSON, CSV, Excel (.xlsx), or HTML**
+- Access **restricted channels** where Telegram disables copying — TG Harvest works at the protocol level
+- **Multi-channel queue** — parse multiple channels in one session, each saved to a separate folder
+- **Incremental parsing** — only fetch new messages since the last run (no duplicates)
+- **Web UI** with interactive charts, search, and analytics — no coding required
+- **CLI** for automation and scripting
 
 ## Quick Start
 
@@ -103,8 +125,10 @@ tg-harvest search "keyword"   # search parsed data
 - **Message search** — full-text search across parsed data with filters
 - **Incremental parsing** — only fetch new messages since last parse
 - **Analytics** — message activity charts, top posts, reaction breakdown
+- **Multi-channel queue** — parse multiple channels in one session (`tg-harvest parse @ch1 @ch2 @ch3`), each saved to a separate date-stamped folder
 - **Flexible filtering** — by date range, message limit
 - **Multiple export formats** — JSON, CSV, Excel (.xlsx), HTML report, or all at once
+- **File splitting** — split large exports into multiple parts (2–20 files)
 - **HTML report** — self-contained single-file HTML with dark/light theme, sortable table, clickable message URLs
 - **Re-export** — convert already parsed JSON to CSV/XLSX/HTML without re-connecting to Telegram (`tg-harvest export`)
 - **File Manager** — browse, delete, and re-export parsed files from the web UI
@@ -221,6 +245,15 @@ tg-harvest parse @channel --enrich-senders
 
 # Fetch full reply threads (extra API calls)
 tg-harvest parse @channel --fetch-replies
+
+# Multi-channel queue — parse several channels in one session
+tg-harvest parse @channel1 @channel2 @channel3
+
+# Multi-channel with options
+tg-harvest parse @news @politics @tech --format all --limit 1000
+
+# Split output into parts (useful for large exports)
+tg-harvest parse @channel --split-parts 5
 
 # Verbose mode (debug logging)
 tg-harvest -v parse @channel
