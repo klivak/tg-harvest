@@ -282,8 +282,8 @@ def render():
 
     # Show last results (multi-channel)
     if "last_parse_results" in st.session_state:
-        for res_entry in st.session_state["last_parse_results"]:
-            _show_result(res_entry["result"], res_entry["files"])
+        for idx, res_entry in enumerate(st.session_state["last_parse_results"]):
+            _show_result(res_entry["result"], res_entry["files"], suffix=f"_{idx}")
     elif "last_parse_result" in st.session_state:
         _show_result(
             st.session_state["last_parse_result"],
@@ -536,7 +536,7 @@ def _format_size(path: str) -> str:
         return ""
 
 
-def _show_result(result_data: dict, output_files: list[str]):
+def _show_result(result_data: dict, output_files: list[str], suffix: str = ""):
     st.divider()
     st.subheader(t("parser.results_subheader", title=result_data["channel"]["title"]))
 
@@ -554,7 +554,7 @@ def _show_result(result_data: dict, output_files: list[str]):
         text_only = st.checkbox(
             t("parser.text_only_label"),
             help=t("parser.text_only_help"),
-            key="result_text_only",
+            key=f"result_text_only{suffix}",
         )
 
         if text_only:
@@ -626,7 +626,7 @@ def _show_result(result_data: dict, output_files: list[str]):
             selected_msg_id = st.selectbox(
                 t("parser.message_detail_id_label"),
                 msg_ids,
-                key="message_detail_select",
+                key=f"message_detail_select{suffix}",
             )
             for msg in display_msgs:
                 if msg["id"] == selected_msg_id:
@@ -658,11 +658,11 @@ def _show_result(result_data: dict, output_files: list[str]):
             max_value=20,
             value=1,
             help=t("parser.split_parts_help"),
-            key="download_split_parts",
+            key=f"download_split_parts{suffix}",
         )
 
     if split_parts > 1:
-        _show_split_downloads(result_data, base_name, int(split_parts), text_only)
+        _show_split_downloads(result_data, base_name, int(split_parts), text_only, suffix)
     elif text_only:
         txt_data = _build_txt(result_data)
         col1, col2 = st.columns(2)
@@ -672,6 +672,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                 data=txt_data,
                 file_name=f"{base_name}.txt",
                 mime="text/plain",
+                key=f"dl_txt{suffix}",
             )
         with col2:
             csv_data = _build_text_only_csv(result_data)
@@ -680,6 +681,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                 data=csv_data,
                 file_name=f"{base_name}_text.csv",
                 mime="text/csv",
+                key=f"dl_csv_text{suffix}",
             )
     else:
         col1, col2, col3, col4 = st.columns(4)
@@ -690,6 +692,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                 data=json.dumps(result_data, ensure_ascii=False, indent=2, default=str),
                 file_name=f"{base_name}.json",
                 mime="application/json",
+                key=f"dl_json{suffix}",
             )
 
         with col2:
@@ -699,6 +702,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                 data=csv_data,
                 file_name=f"{base_name}.csv",
                 mime="text/csv",
+                key=f"dl_csv{suffix}",
             )
 
         with col3:
@@ -709,6 +713,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                     data=xlsx_data,
                     file_name=f"{base_name}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"dl_xlsx{suffix}",
                 )
 
         with col4:
@@ -719,6 +724,7 @@ def _show_result(result_data: dict, output_files: list[str]):
                     data=html_data,
                     file_name=f"{base_name}.html",
                     mime="text/html",
+                    key=f"dl_html{suffix}",
                 )
 
 
@@ -739,7 +745,9 @@ def _split_messages(messages: list[dict], parts: int) -> list[list[dict]]:
     return chunks
 
 
-def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, text_only: bool):
+def _show_split_downloads(
+    result_data: dict, base_name: str, split_parts: int, text_only: bool, suffix: str = ""
+):
     """Build zip downloads with split parts."""
     messages = result_data.get("messages", [])
     chunks = _split_messages(messages, split_parts)
@@ -775,6 +783,7 @@ def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, t
                     data=zip_data,
                     file_name=f"{base_name}_txt.zip",
                     mime="application/zip",
+                    key=f"dl_txt_zip{suffix}",
                 )
         with col2:
             zip_data = _build_format_zip("csv", _build_text_only_csv)
@@ -784,6 +793,7 @@ def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, t
                     data=zip_data,
                     file_name=f"{base_name}_csv.zip",
                     mime="application/zip",
+                    key=f"dl_csv_txt_zip{suffix}",
                 )
     else:
         col1, col2, col3, col4 = st.columns(4)
@@ -798,6 +808,7 @@ def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, t
                     data=zip_data,
                     file_name=f"{base_name}_json.zip",
                     mime="application/zip",
+                    key=f"dl_json_zip{suffix}",
                 )
         with col2:
             zip_data = _build_format_zip("csv", _build_csv)
@@ -807,6 +818,7 @@ def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, t
                     data=zip_data,
                     file_name=f"{base_name}_csv.zip",
                     mime="application/zip",
+                    key=f"dl_csv_zip{suffix}",
                 )
         with col3:
             zip_data = _build_format_zip("xlsx", _build_xlsx)
@@ -816,6 +828,7 @@ def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, t
                     data=zip_data,
                     file_name=f"{base_name}_xlsx.zip",
                     mime="application/zip",
+                    key=f"dl_xlsx_zip{suffix}",
                 )
         with col4:
             zip_data = _build_format_zip("html", _build_html)
@@ -825,6 +838,7 @@ def _show_split_downloads(result_data: dict, base_name: str, split_parts: int, t
                     data=zip_data,
                     file_name=f"{base_name}_html.zip",
                     mime="application/zip",
+                    key=f"dl_html_zip{suffix}",
                 )
 
 
