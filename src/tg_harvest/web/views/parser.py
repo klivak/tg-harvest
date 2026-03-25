@@ -30,12 +30,16 @@ def render():
         st.error(f"Settings error: {e}")
         return
 
+    # Warn if no channels loaded
+    loaded_channels = st.session_state.get("channels", [])
+    if not loaded_channels:
+        st.warning(t("parser.no_channels_warning"))
+
     with st.expander(t("parser.tips_expander"), expanded=False):
         st.markdown(t("parser.tips_body"))
 
     # Channel input — multiselect from loaded channels, or manual text area
     prefill = st.session_state.pop("prefill_channel", "")
-    loaded_channels = st.session_state.get("channels", [])
 
     if loaded_channels:
         # Build options: "Title (@username)" -> "@username" or "Title (ID: 123)" -> "123"

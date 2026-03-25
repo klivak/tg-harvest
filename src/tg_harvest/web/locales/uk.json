@@ -85,6 +85,7 @@
   "parser.channel_select_label": "Оберіть канал",
   "parser.channel_manual_label": "Або введіть вручну",
   "parser.channel_manual_toggle": "Ввести вручну",
+  "parser.no_channels_warning": "Канали ще не завантажені. Спочатку перейдіть на сторінку **Канали**, завантажте список каналів, а потім поверніться сюди для парсингу.",
   "parser.channel_load_hint": "Спочатку завантажте канали на сторінці **Канали**, щоб побачити їх тут",
   "parser.incremental_label": "Інкрементальний",
   "parser.incremental_help": "Завантажувати лише нові повідомлення з моменту останнього парсингу",

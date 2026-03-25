@@ -85,6 +85,7 @@
   "parser.channel_select_label": "Select channel",
   "parser.channel_manual_label": "Or enter manually",
   "parser.channel_manual_toggle": "Enter manually",
+  "parser.no_channels_warning": "No channels loaded yet. Go to the **Channels** page first to load your channel list, then come back here to parse.",
   "parser.channel_load_hint": "Load channels on the **Channels** page first to see them here",
   "parser.incremental_label": "Incremental",
   "parser.incremental_help": "Only fetch new messages since last parse",
