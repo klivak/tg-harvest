@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tg-harvest"
-version = "1.2.1"
+version = "1.2.2"
 description = "Telegram data harvester via MTProto API — channels, groups, bots, private chats"
 readme = "README.md"
 license = {text = "MIT"}
@@ -26,6 +26,7 @@ dependencies = [
     "cryptg>=0.4",
     "python-dotenv>=1.0",
     "streamlit>=1.40",
+    "streamlit-js-eval>=0.1",
     "plotly>=5.0",
     "openpyxl>=3.1",
 ]

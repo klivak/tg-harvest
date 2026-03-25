@@ -10,6 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import streamlit as st
+from streamlit_js_eval import get_local_storage, set_local_storage
 
 from tg_harvest.config import Settings
 from tg_harvest.config.constants import ALL_EXPORT_FIELDS
@@ -39,6 +40,7 @@ def render():
     if loaded_channels:
         # Build options: "Title (@username)" -> "@username" or "Title (ID: 123)" -> "123"
         channel_options: dict[str, str] = {}
+        value_to_label: dict[str, str] = {}
         for c in loaded_channels:
             ch_title = c["title"]
             ch_username = c["username"]
@@ -50,6 +52,7 @@ def render():
                 label = f"{ch_title} (ID: {ch_id})"
                 value = str(ch_id)
             channel_options[label] = value
+            value_to_label[value] = label
 
         manual_mode = st.checkbox(t("parser.channel_manual_toggle"))
 
@@ -74,6 +77,22 @@ def render():
                 query_lower = search_query.lower()
                 labels = [lbl for lbl in labels if query_lower in lbl.lower()]
 
+            # Restore saved selection from localStorage
+            ls_key = "tg_harvest_selected_channels"
+            if "ls_channels_loaded" not in st.session_state:
+                saved_raw = get_local_storage(ls_key)
+                if saved_raw:
+                    try:
+                        saved_values = (
+                            json.loads(saved_raw) if isinstance(saved_raw, str) else saved_raw
+                        )
+                    except (json.JSONDecodeError, TypeError):
+                        saved_values = []
+                    restored = [value_to_label[v] for v in saved_values if v in value_to_label]
+                    if restored:
+                        st.session_state["channel_multiselect"] = restored
+                st.session_state["ls_channels_loaded"] = True
+
             # Default selection from prefill
             default_selection = []
             if prefill:
@@ -81,12 +100,20 @@ def render():
                     if channel_options[lbl] == prefill:
                         default_selection = [lbl]
                         break
+
             selected_labels = st.multiselect(
                 t("parser.channel_multiselect_label"),
                 labels,
-                default=default_selection,
+                default=default_selection if default_selection else None,
+                key="channel_multiselect",
             )
             channels_list = [channel_options[lbl] for lbl in selected_labels]
+
+            # Sync selection to localStorage
+            if channels_list:
+                set_local_storage(ls_key, json.dumps(channels_list))
+            else:
+                set_local_storage(ls_key, "")
     else:
         channels_text = st.text_area(
             t("parser.channel_textarea_label"),
