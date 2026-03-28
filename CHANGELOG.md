@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2026-03-28
+
+### Added
+
+- **Download JSON from analytics page**: download messages JSON (with split-into-parts support) directly from the analytics page
+
+### Fixed
+
+- **Duplicate widget key crash**: `text_area` in message detail viewer now uses unique key per channel result
+
 ## [1.2.4] - 2026-03-25
 
 ### Fixed

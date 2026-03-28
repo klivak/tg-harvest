@@ -2,6 +2,8 @@
 
 import csv
 import io
+import json
+import zipfile
 from collections import Counter
 from pathlib import Path
 
@@ -87,6 +89,40 @@ def _render_single(options: dict):
     col8.metric(t("analytics.metric_avg_msg_length"), f"{stats.avg_message_length():,.0f}")
     top_fwd = stats.top_by_forwards(1)
     col9.metric(t("analytics.metric_max_forwards"), top_fwd[0].forwards if top_fwd else 0)
+
+    # Download section: split + JSON
+    result_data = result.model_dump(mode="json")
+    base_name = result.channel.username or str(result.channel.id)
+
+    split_col1, split_col2 = st.columns([1, 3])
+    with split_col1:
+        split_parts = st.number_input(
+            t("parser.split_parts_label"),
+            min_value=1,
+            max_value=20,
+            value=1,
+            help=t("parser.split_parts_help"),
+            key="analytics_split_parts",
+        )
+
+    if split_parts > 1:
+        zip_data = _build_split_json_zip(result_data, base_name, int(split_parts))
+        if zip_data:
+            st.download_button(
+                t("analytics.download_json_zip"),
+                data=zip_data,
+                file_name=f"{base_name}_json.zip",
+                mime="application/zip",
+                key="dl_messages_json_zip",
+            )
+    else:
+        st.download_button(
+            t("analytics.download_json"),
+            data=json.dumps(result_data, ensure_ascii=False, indent=2, default=str),
+            file_name=f"{base_name}.json",
+            mime="application/json",
+            key="dl_messages_json",
+        )
 
     st.divider()
 
@@ -307,6 +343,31 @@ def _render_word_frequency(messages: list) -> None:
         st.plotly_chart(fig, width="stretch")
     else:
         st.info(t("analytics.word_freq_empty"))
+
+
+def _build_split_json_zip(result_data: dict, base_name: str, parts: int) -> bytes | None:
+    """Split messages into N parts and pack as JSON files in a ZIP."""
+    messages = result_data.get("messages", [])
+    if not messages:
+        return None
+    total = len(messages)
+    chunk_size, remainder = divmod(total, parts)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        offset = 0
+        part_num = 0
+        for i in range(parts):
+            size = chunk_size + (1 if i < remainder else 0)
+            chunk = messages[offset : offset + size]
+            if not chunk:
+                break
+            offset += size
+            part_num += 1
+            part_data = {**result_data, "messages": chunk}
+            content = json.dumps(part_data, ensure_ascii=False, indent=2, default=str)
+            fname = f"{base_name}_part{part_num}of{parts}.json"
+            zf.writestr(fname, content)
+    return buf.getvalue() if part_num > 0 else None
 
 
 def _render_compare(options: dict):

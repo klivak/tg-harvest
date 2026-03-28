@@ -290,6 +290,8 @@
   "analytics.metric_avg_replies": "Сер. відповідей/гілку",
   "analytics.metric_max_replies": "Макс. відповідей",
   "analytics.col_replies": "Відповіді",
+  "analytics.download_json": "\u2b07\ufe0f Завантажити повідомлення (JSON)",
+  "analytics.download_json_zip": "\u2b07\ufe0f Завантажити повідомлення (JSON ZIP)",
 
   "parser.channel_search_label": "Пошук каналів",
   "parser.channel_search_placeholder": "Введіть назву для фільтрації...",

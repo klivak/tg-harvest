@@ -636,6 +636,7 @@ def _show_result(result_data: dict, output_files: list[str], suffix: str = ""):
                         value=msg.get("text") or "",
                         height=200,
                         disabled=True,
+                        key=f"message_detail_text{suffix}",
                     )
                     if msg.get("media"):
                         st.json(msg["media"])

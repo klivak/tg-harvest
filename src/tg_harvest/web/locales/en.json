@@ -290,6 +290,8 @@
   "analytics.metric_avg_replies": "Avg replies/thread",
   "analytics.metric_max_replies": "Max replies",
   "analytics.col_replies": "Replies",
+  "analytics.download_json": "\u2b07\ufe0f Download messages (JSON)",
+  "analytics.download_json_zip": "\u2b07\ufe0f Download messages (JSON ZIP)",
 
   "parser.channel_search_label": "Search channels",
   "parser.channel_search_placeholder": "Type to filter channels...",
