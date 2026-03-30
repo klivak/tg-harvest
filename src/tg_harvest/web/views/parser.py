@@ -284,6 +284,9 @@ def render():
     if "last_parse_results" in st.session_state:
         for idx, res_entry in enumerate(st.session_state["last_parse_results"]):
             _show_result(res_entry["result"], res_entry["files"], suffix=f"_{idx}")
+        # Download All section for multi-channel results
+        if len(st.session_state["last_parse_results"]) > 1:
+            _show_download_all(st.session_state["last_parse_results"])
     elif "last_parse_result" in st.session_state:
         _show_result(
             st.session_state["last_parse_result"],
@@ -319,7 +322,7 @@ def _do_parse(
                     progress_placeholder.markdown(t("parser.progress_parsed", count=count))
 
             try:
-                all_results = asyncio.run(
+                all_results, errors = asyncio.run(
                     _parse_queue_async(
                         settings,
                         channels,
@@ -344,8 +347,9 @@ def _do_parse(
                     st.session_state.pop("last_parse_result", None)
                     st.session_state.pop("last_output_files", None)
                 else:
-                    st.session_state["last_parse_result"] = all_results[0]["result"]
-                    st.session_state["last_output_files"] = all_results[0]["files"]
+                    if all_results:
+                        st.session_state["last_parse_result"] = all_results[0]["result"]
+                        st.session_state["last_output_files"] = all_results[0]["files"]
                     st.session_state.pop("last_parse_results", None)
 
                 st.session_state["result_text_only"] = options.text_only
@@ -353,14 +357,32 @@ def _do_parse(
                 if limit > 0:
                     progress_placeholder.progress(100, text=t("parser.progress_done"))
 
-                if multi:
+                # Show per-channel errors (non-fatal in multi mode)
+                for err_channel, err in errors:
+                    _show_parse_error(err, err_channel)
+
+                if errors and not all_results:
+                    status.update(label=t("parser.status_error"), state="error")
+                    st.toast(t("parser.toast_error"), icon="\u274c")
+                elif errors:
+                    done_label = t(
+                        "parser.queue_partial",
+                        ok=len(all_results),
+                        fail=len(errors),
+                        total=total_msgs,
+                    )
+                    status.update(label=done_label, state="complete")
+                    st.toast(t("parser.toast_success", count=total_msgs), icon="\u2705")
+                elif multi:
                     done_label = t(
                         "parser.queue_complete", count=len(all_results), total=total_msgs
                     )
+                    status.update(label=done_label, state="complete")
+                    st.toast(t("parser.toast_success", count=total_msgs), icon="\u2705")
                 else:
                     done_label = t("parser.success", count=total_msgs)
-                status.update(label=done_label, state="complete")
-                st.toast(t("parser.toast_success", count=total_msgs), icon="\u2705")
+                    status.update(label=done_label, state="complete")
+                    st.toast(t("parser.toast_success", count=total_msgs), icon="\u2705")
 
                 _invalidate_data_caches()
 
@@ -452,78 +474,86 @@ async def _parse_queue_async(
     multi = len(channels) > 1
     state = StateManager(settings.state_path)
     all_results: list[dict] = []
+    errors: list[tuple[str, Exception]] = []
 
     async with TelegramSession(settings) as session:
         rate_limiter = RateLimiter(delay=settings.request_delay)
         parser = ChannelParser(session.client, rate_limiter)
 
         for ch_idx, channel in enumerate(channels, 1):
-            channel_id = int(channel) if channel.lstrip("-").isdigit() else channel
-            min_id = 0
+            try:
+                channel_id = int(channel) if channel.lstrip("-").isdigit() else channel
+                min_id = 0
 
-            if multi:
-                status.update(
-                    label=t(
-                        "parser.queue_progress",
-                        current=ch_idx,
-                        total=len(channels),
-                        channel=channel,
-                    ),
-                    state="running",
+                if multi:
+                    status.update(
+                        label=t(
+                            "parser.queue_progress",
+                            current=ch_idx,
+                            total=len(channels),
+                            channel=channel,
+                        ),
+                        state="running",
+                    )
+                else:
+                    status.update(label=t("parser.spinner_parsing"), state="running")
+
+                if incremental:
+                    info = await parser.get_channel_info(channel_id)
+                    last_id = state.get_last_id(info.id)
+                    if last_id:
+                        min_id = last_id
+
+                result = await parser.parse(
+                    channel=channel_id,
+                    from_date=fd,
+                    to_date=td,
+                    limit=limit if limit > 0 else 0,
+                    min_id=min_id,
+                    on_progress=on_progress,
+                    options=options,
                 )
-            else:
-                status.update(label=t("parser.spinner_parsing"), state="running")
 
-            if incremental:
-                info = await parser.get_channel_info(channel_id)
-                last_id = state.get_last_id(info.id)
-                if last_id:
-                    min_id = last_id
+                if result.messages:
+                    max_msg_id = max(m.id for m in result.messages)
+                    state.set_last_id(result.channel.id, max_msg_id)
 
-            result = await parser.parse(
-                channel=channel_id,
-                from_date=fd,
-                to_date=td,
-                limit=limit if limit > 0 else 0,
-                min_id=min_id,
-                on_progress=on_progress,
-                options=options,
-            )
+                # Per-channel subfolder when multiple channels
+                channel_out = session_dir
+                if multi:
+                    folder_name = result.channel.username or str(result.channel.id)
+                    folder_name = "".join(
+                        c if c.isalnum() or c in "-_" else "_" for c in folder_name
+                    )
+                    channel_out = session_dir / folder_name
+                    channel_out.mkdir(parents=True, exist_ok=True)
 
-            if result.messages:
-                max_msg_id = max(m.id for m in result.messages)
-                state.set_last_id(result.channel.id, max_msg_id)
+                output_files = []
+                if export_format in ("json", "all"):
+                    path = await JsonExporter(fields).export(result, channel_out)
+                    output_files.append(str(path))
+                if export_format in ("csv", "all"):
+                    path = await CsvExporter(fields).export(result, channel_out)
+                    output_files.append(str(path))
+                if export_format in ("xlsx", "all"):
+                    path = await XlsxExporter(fields).export(result, channel_out)
+                    output_files.append(str(path))
+                if export_format in ("html", "all"):
+                    path = await HtmlExporter(fields).export(result, channel_out)
+                    output_files.append(str(path))
 
-            # Per-channel subfolder when multiple channels
-            channel_out = session_dir
-            if multi:
-                folder_name = result.channel.username or str(result.channel.id)
-                folder_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in folder_name)
-                channel_out = session_dir / folder_name
-                channel_out.mkdir(parents=True, exist_ok=True)
+                all_results.append(
+                    {
+                        "result": result.model_dump(mode="json"),
+                        "files": output_files,
+                    }
+                )
+            except Exception as e:
+                errors.append((channel, e))
+                if not multi:
+                    raise
 
-            output_files = []
-            if export_format in ("json", "all"):
-                path = await JsonExporter(fields).export(result, channel_out)
-                output_files.append(str(path))
-            if export_format in ("csv", "all"):
-                path = await CsvExporter(fields).export(result, channel_out)
-                output_files.append(str(path))
-            if export_format in ("xlsx", "all"):
-                path = await XlsxExporter(fields).export(result, channel_out)
-                output_files.append(str(path))
-            if export_format in ("html", "all"):
-                path = await HtmlExporter(fields).export(result, channel_out)
-                output_files.append(str(path))
-
-            all_results.append(
-                {
-                    "result": result.model_dump(mode="json"),
-                    "files": output_files,
-                }
-            )
-
-    return all_results
+    return all_results, errors
 
 
 def _format_size(path: str) -> str:
@@ -841,6 +871,96 @@ def _show_split_downloads(
                     mime="application/zip",
                     key=f"dl_html_zip{suffix}",
                 )
+
+
+def _show_download_all(all_results: list[dict]):
+    """Show a unified 'Download All' section for multi-channel results."""
+    st.divider()
+    st.subheader(t("parser.download_all_header"))
+
+    split_col1, split_col2 = st.columns([1, 3])
+    with split_col1:
+        split_parts = st.number_input(
+            t("parser.split_parts_label"),
+            min_value=1,
+            max_value=20,
+            value=1,
+            help=t("parser.download_all_split_help"),
+            key="download_all_split_parts",
+        )
+
+    fmt_col1, fmt_col2, fmt_col3, fmt_col4 = st.columns(4)
+
+    def _build_all_zip(ext: str, builder) -> bytes:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for entry in all_results:
+                result_data = entry["result"]
+                ch_name = result_data["channel"].get("username") or str(
+                    result_data["channel"]["id"]
+                )
+                folder = "".join(c if c.isalnum() or c in "-_" else "_" for c in ch_name)
+                messages = result_data.get("messages", [])
+                chunks = _split_messages(messages, int(split_parts))
+                total_parts = len(chunks)
+                for idx, chunk in enumerate(chunks, 1):
+                    part_data = {**result_data, "messages": chunk}
+                    content = builder(part_data)
+                    if content is None:
+                        continue
+                    if total_parts > 1:
+                        fname = f"{folder}/{folder}_part{idx}of{total_parts}.{ext}"
+                    else:
+                        fname = f"{folder}/{folder}.{ext}"
+                    if isinstance(content, bytes):
+                        zf.writestr(fname, content)
+                    else:
+                        zf.writestr(fname, content)
+        return buf.getvalue()
+
+    with fmt_col1:
+        zip_data = _build_all_zip("txt", _build_txt)
+        st.download_button(
+            t("parser.download_all_txt"),
+            data=zip_data,
+            file_name="all_channels_txt.zip",
+            mime="application/zip",
+            key="dl_all_txt",
+        )
+
+    with fmt_col2:
+        zip_data = _build_all_zip(
+            "json",
+            lambda d: json.dumps(d, ensure_ascii=False, indent=2, default=str),
+        )
+        st.download_button(
+            t("parser.download_all_json"),
+            data=zip_data,
+            file_name="all_channels_json.zip",
+            mime="application/zip",
+            key="dl_all_json",
+        )
+
+    with fmt_col3:
+        zip_data = _build_all_zip("csv", _build_csv)
+        st.download_button(
+            t("parser.download_all_csv"),
+            data=zip_data,
+            file_name="all_channels_csv.zip",
+            mime="application/zip",
+            key="dl_all_csv",
+        )
+
+    with fmt_col4:
+        zip_data = _build_all_zip("xlsx", _build_xlsx)
+        if zip_data:
+            st.download_button(
+                t("parser.download_all_xlsx"),
+                data=zip_data,
+                file_name="all_channels_xlsx.zip",
+                mime="application/zip",
+                key="dl_all_xlsx",
+            )
 
 
 def _build_txt(result_data: dict) -> str:

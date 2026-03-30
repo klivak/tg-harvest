@@ -301,5 +301,12 @@
   "parser.queue_count": "Channels in queue: {count}",
   "parser.queue_progress": "Parsing {current}/{total}: {channel}",
   "parser.queue_complete": "Parsed {count} channels ({total} messages)",
-  "parser.split_info": "To split output into multiple files, use the **Split into parts** option that appears in the results section after parsing."
+  "parser.queue_partial": "Parsed {ok} channels ({total} messages), {fail} failed",
+  "parser.split_info": "To split output into multiple files, use the **Split into parts** option that appears in the results section after parsing.",
+  "parser.download_all_header": "📦 Download All Channels",
+  "parser.download_all_split_help": "Split each channel's messages into N files inside the archive",
+  "parser.download_all_txt": "⬇️ All TXT (ZIP)",
+  "parser.download_all_json": "⬇️ All JSON (ZIP)",
+  "parser.download_all_csv": "⬇️ All CSV (ZIP)",
+  "parser.download_all_xlsx": "⬇️ All XLSX (ZIP)"
 }

@@ -301,5 +301,12 @@
   "parser.queue_count": "Каналів у черзі: {count}",
   "parser.queue_progress": "Парсинг {current}/{total}: {channel}",
   "parser.queue_complete": "Розпарсено {count} каналів ({total} повідомлень)",
-  "parser.split_info": "Щоб розбити результат на кілька файлів, використовуйте опцію **Розбити на частини**, яка з'явиться в секції результатів після парсингу."
+  "parser.queue_partial": "Розпарсено {ok} каналів ({total} повідомлень), {fail} з помилками",
+  "parser.split_info": "Щоб розбити результат на кілька файлів, використовуйте опцію **Розбити на частини**, яка з'явиться в секції результатів після парсингу.",
+  "parser.download_all_header": "📦 Завантажити всі канали",
+  "parser.download_all_split_help": "Розбити повідомлення кожного каналу на N файлів всередині архіву",
+  "parser.download_all_txt": "⬇️ Все TXT (ZIP)",
+  "parser.download_all_json": "⬇️ Все JSON (ZIP)",
+  "parser.download_all_csv": "⬇️ Все CSV (ZIP)",
+  "parser.download_all_xlsx": "⬇️ Все XLSX (ZIP)"
 }
