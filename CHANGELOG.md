@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2026-04-03
+
+### Added
+
+- **No media size limit option**: checkbox "No file size limit" in web UI and `--max-media-size 0` in CLI to download all media regardless of file size
+- **Increased max slider to 2 GB**: media size slider now goes up to 2048 MB (was 200 MB) to match Telegram's file size limit
+
 ## [1.2.6] - 2026-03-30
 
 ### Added

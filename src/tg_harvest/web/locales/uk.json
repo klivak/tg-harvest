@@ -277,6 +277,7 @@
   "parser.enrich_senders_label": "Збагатити відправників",
   "parser.enrich_senders_help": "Розшифрувати ID відправників у юзернейми та імена",
   "parser.max_media_size_label": "Макс. розмір медіа (МБ)",
+  "parser.no_media_size_limit": "Без ліміту розміру (завантажити все)",
   "parser.split_parts_label": "Розбити на частини",
   "parser.split_parts_help": "Розбити завантаження на N файлів (2-10). Корисно для великих експортів. Файли пакуються в ZIP-архів.",
   "parser.download_txt_zip": "\u2b07\ufe0f Завантажити TXT (ZIP)",

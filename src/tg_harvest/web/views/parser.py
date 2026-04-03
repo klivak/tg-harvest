@@ -219,7 +219,11 @@ def render():
 
     max_media_size = 50
     if download_media:
-        max_media_size = st.slider(t("parser.max_media_size_label"), 1, 200, 50)
+        no_size_limit = st.checkbox(t("parser.no_media_size_limit"), value=False)
+        if no_size_limit:
+            max_media_size = 0
+        else:
+            max_media_size = st.slider(t("parser.max_media_size_label"), 1, 2048, 50)
 
     # Advanced options in expander
     with st.expander(t("parser.advanced_expander"), expanded=False):

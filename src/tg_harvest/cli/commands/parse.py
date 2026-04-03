@@ -93,7 +93,7 @@ console = Console()
     "--max-media-size",
     default=DEFAULT_MAX_MEDIA_SIZE_MB,
     type=int,
-    help="Max media file size in MB.",
+    help="Max media file size in MB (0 = no limit).",
     show_default=True,
 )
 @click.option(

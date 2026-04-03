@@ -277,6 +277,7 @@
   "parser.enrich_senders_label": "Enrich senders",
   "parser.enrich_senders_help": "Resolve sender IDs to usernames and display names",
   "parser.max_media_size_label": "Max media file size (MB)",
+  "parser.no_media_size_limit": "No file size limit (download all)",
   "parser.split_parts_label": "Split into parts",
   "parser.split_parts_help": "Split download into N files (2-10). Useful for large exports. Files are packed into a ZIP archive.",
   "parser.download_txt_zip": "\u2b07\ufe0f Download TXT (ZIP)",

@@ -43,8 +43,12 @@ class MediaDownloader:
         if media_info.type in NON_DOWNLOADABLE:
             return None
 
-        # Size check before downloading
-        if media_info.file_size and media_info.file_size > self._max_size_bytes:
+        # Size check before downloading (0 = no limit)
+        if (
+            self._max_size_bytes > 0
+            and media_info.file_size
+            and media_info.file_size > self._max_size_bytes
+        ):
             self._stats.skipped_size_limit += 1
             logger.debug(
                 "Skipping msg %d: size %d exceeds limit %d",
